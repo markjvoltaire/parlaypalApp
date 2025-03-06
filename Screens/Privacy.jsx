@@ -156,8 +156,7 @@ export default function Privacy({ navigation }) {
           <PolicyParagraph>• Restriction of processing</PolicyParagraph>
           <PolicyParagraph>• Data portability</PolicyParagraph>
           <PolicyParagraph>
-            To exercise these rights, please contact us at
-            privacy@parlaypal.com.
+            To exercise these rights, please contact us at parlaypalai@gmail.com
           </PolicyParagraph>
         </PolicySection>
 
@@ -185,7 +184,7 @@ export default function Privacy({ navigation }) {
             us at:
           </PolicyParagraph>
           <PolicyParagraph>Parlay Pal</PolicyParagraph>
-          <PolicyParagraph>Email: privacy@parlaypal.com</PolicyParagraph>
+          <PolicyParagraph>Email: parlaypalai@gmail.com</PolicyParagraph>
         </PolicySection>
 
         <View style={styles.footer}>
