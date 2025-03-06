@@ -85,7 +85,7 @@ const SupportOption = ({ icon, title, subtitle, onPress }) => (
 export default function Help({ navigation }) {
   const contactSupport = () => {
     Linking.openURL(
-      "mailto:support@parlaypal.com?subject=Support Request&body=Hello, I need help with..."
+      "mailto:parlaypalai@gmail.com?subject=Support Request&body=Hello, I need help with"
     ).catch(() => {
       Alert.alert(
         "Cannot Open Email",
@@ -132,16 +132,16 @@ export default function Help({ navigation }) {
             <SupportOption
               icon="mail"
               title="Email Support"
-              subtitle="support@parlaypal.com"
+              subtitle="Email us anytime"
               onPress={contactSupport}
             />
-
+            {/* 
             <SupportOption
               icon="logo-twitter"
               title="Twitter"
               subtitle="@parlaypal"
               onPress={openTwitter}
-            />
+            /> */}
           </View>
         </View>
 
@@ -203,14 +203,10 @@ export default function Help({ navigation }) {
         {/* About */}
         <View style={styles.versionInfo}>
           <Text style={styles.versionText}>Parlay Pal v1.0.0</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("PrivacyPolicy")}
-          >
+          <TouchableOpacity onPress={() => navigation.navigate("Privacy")}>
             <Text style={styles.linkText}>Privacy Policy</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("TermsOfService")}
-          >
+          <TouchableOpacity onPress={() => navigation.navigate("Terms")}>
             <Text style={styles.linkText}>Terms of Service</Text>
           </TouchableOpacity>
         </View>

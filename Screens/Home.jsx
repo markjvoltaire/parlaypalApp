@@ -22,10 +22,101 @@ import Purchases from "react-native-purchases";
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
 Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 // API URL - Make sure to update this to your actual backend URL
 const API_URL = "https://parlaypal.onrender.com";
+
+// Inline Splash Screen Component
+const SplashScreen = ({ onFinish }) => {
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    // Start animations when component mounts
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Set a timeout for how long to display the splash screen
+    const timer = setTimeout(() => {
+      // Start fade out animation
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 100,
+          delay: 100,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Call the onFinish callback when animation completes
+        if (onFinish) onFinish();
+      });
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [fadeAnim, scaleAnim, onFinish]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.splashContainer,
+        {
+          opacity: fadeAnim,
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.splashLogoContainer,
+          {
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <Image
+          source={require("../assets/Activity.png")}
+          style={styles.splashLogoImage}
+        />
+
+        {/* Glow effect around logo */}
+        <Animated.View
+          style={[
+            styles.logoGlow,
+            {
+              opacity: fadeAnim.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.5, 0.8, 0.5],
+              }),
+              transform: [
+                {
+                  scale: fadeAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [1, 1.1, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+
+        <Text style={styles.splashAppTitle}>Parlay Pal</Text>
+        <Text style={styles.splashAppTagline}>AI-Powered Bet Analysis</Text>
+      </Animated.View>
+    </Animated.View>
+  );
+};
 
 export default function Home({ navigation }) {
   const [image, setImage] = useState(null);
@@ -34,6 +125,7 @@ export default function Home({ navigation }) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [products, setProducts] = useState([]);
+  const [showSplash, setShowSplash] = useState(true); // Add state for splash screen
   const scrollViewRef = useRef(null);
 
   // Animation values for slipInfo appearance
@@ -44,6 +136,11 @@ export default function Home({ navigation }) {
   const paywallSlideAnim = useRef(
     new Animated.Value(Dimensions.get("window").height)
   ).current;
+
+  // Handle splash screen finish
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
 
   // Fetch products from RevenueCat when component mounts
   useEffect(() => {
@@ -528,6 +625,19 @@ export default function Home({ navigation }) {
                 style={styles.paywallIcon}
               />
               <Text style={styles.paywallTitle}>Unlock Parlay Analysis</Text>
+
+              {/* Added Free Trial Banner */}
+              <View style={styles.trialBanner}>
+                <MaterialCommunityIcons
+                  name="gift-outline"
+                  size={20}
+                  color="#FFD700"
+                />
+                <Text style={styles.trialBannerText}>
+                  Start with a 3-DAY FREE TRIAL
+                </Text>
+              </View>
+
               <Text style={styles.paywallDescription}>
                 Get AI-powered insights on all your bet slips to make smarter
                 betting decisions
@@ -550,6 +660,13 @@ export default function Home({ navigation }) {
                     Unlimited bet slip uploads
                   </Text>
                 </View>
+                {/* Added Trial Feature */}
+                <View style={styles.featureRow}>
+                  <Ionicons name="checkmark-circle" size={24} color="#FFD700" />
+                  <Text style={[styles.featureText, { color: "#FFD700" }]}>
+                    Try for 3 days free - cancel anytime
+                  </Text>
+                </View>
               </View>
 
               {products.map((pkg, index) => (
@@ -561,12 +678,9 @@ export default function Home({ navigation }) {
                   <Text style={styles.subscriptionButtonText}>
                     {pkg.product.title} - {pkg.product.priceString}
                   </Text>
-                  {pkg.product.introPrice && (
-                    <Text style={styles.trialText}>
-                      Includes {pkg.product.introPrice.periodNumberOfUnits}-day
-                      free trial
-                    </Text>
-                  )}
+                  <Text style={styles.trialText}>
+                    Includes 3-day free trial - Cancel anytime
+                  </Text>
                 </TouchableOpacity>
               ))}
 
@@ -576,6 +690,11 @@ export default function Home({ navigation }) {
               >
                 <Text style={styles.restoreButtonText}>Restore Purchases</Text>
               </TouchableOpacity>
+
+              <Text style={styles.legalText}>
+                Your subscription will automatically renew after the trial.
+                Cancel anytime before the trial ends to avoid charges.
+              </Text>
             </View>
           </Animated.View>
         </View>
@@ -587,133 +706,142 @@ export default function Home({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
 
-      <View style={styles.header}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Image
-            source={require("../assets/Activity.png")} // Adjust the path as needed
-            style={{ width: 30, height: 30, marginRight: 15 }} // Adjust sizing and margin as needed
-          />
-          <View>
-            <Text style={styles.appTitle}>Parlay Pal</Text>
-            <Text style={styles.appTagline}>AI-Powered Bet Analysis</Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Ionicons name="person-circle" size={32} color="#7789FF" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {!image ? (
-          <View style={styles.uploadSection}>
-            <View style={styles.uploadCard}>
-              <View style={styles.uploadIconContainer}>
-                <Ionicons
-                  name="cloud-upload-outline"
-                  size={50}
-                  color="#7789FF"
-                />
-              </View>
-              <Text style={styles.uploadTitle}>Upload Your Bet Slip</Text>
-              <Text style={styles.uploadDescription}>
-                Take a photo or select an image of your bet slip for AI analysis
-              </Text>
-
-              <View style={styles.uploadButtons}>
-                <TouchableOpacity
-                  style={[styles.uploadButton, styles.cameraButton]}
-                  onPress={takePicture}
-                >
-                  <Ionicons name="camera-outline" size={24} color="#fff" />
-                  <Text style={styles.uploadButtonText}>Take Photo</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.uploadButton, styles.galleryButton]}
-                  onPress={pickImage}
-                >
-                  <Ionicons name="images-outline" size={24} color="#fff" />
-                  <Text style={styles.uploadButtonText}>Gallery</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.analysisSection}>
-            <View style={styles.imageContainer}>
+      {showSplash ? (
+        <SplashScreen onFinish={handleSplashFinish} />
+      ) : (
+        <>
+          <View style={styles.header}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Image
-                source={{ uri: image }}
-                style={styles.previewImage}
-                resizeMode="contain"
+                source={require("../assets/Activity.png")}
+                style={{ width: 30, height: 30, marginRight: 15 }}
               />
-              <TouchableOpacity
-                style={styles.changeImageButton}
-                onPress={pickImage}
-              >
-                <Ionicons name="camera-outline" size={20} color="#fff" />
-              </TouchableOpacity>
+              <View>
+                <Text style={styles.appTitle}>Parlay Pal</Text>
+                <Text style={styles.appTagline}>AI-Powered Bet Analysis</Text>
+              </View>
             </View>
-
-            {!slipInfo && (
-              <TouchableOpacity
-                style={[
-                  styles.analyzeButton,
-                  uploading && styles.analyzeButtonDisabled,
-                ]}
-                onPress={uploadImage}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator color="#ffffff" size="small" />
-                    <Text style={styles.loadingText}>Analyzing slip...</Text>
-                  </View>
-                ) : (
-                  <>
-                    <MaterialCommunityIcons
-                      name="lightning-bolt"
-                      size={22}
-                      color="#fff"
-                    />
-                    <Text style={styles.buttonText}>Analyze Bet Slip</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
-
             <TouchableOpacity
-              style={styles.clearButton}
-              onPress={resetAnalysis}
+              style={styles.profileButton}
+              onPress={() => navigation.navigate("Profile")}
             >
-              <Text style={styles.clearButtonText}>Clear</Text>
+              <Ionicons name="person-circle" size={32} color="#7789FF" />
             </TouchableOpacity>
           </View>
-        )}
 
-        {renderSlipInfo()}
-      </ScrollView>
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {!image ? (
+              <View style={styles.uploadSection}>
+                <View style={styles.uploadCard}>
+                  <View style={styles.uploadIconContainer}>
+                    <Ionicons
+                      name="cloud-upload-outline"
+                      size={50}
+                      color="#7789FF"
+                    />
+                  </View>
+                  <Text style={styles.uploadTitle}>Upload Your Bet Slip</Text>
+                  <Text style={styles.uploadDescription}>
+                    Take a photo or select an image of your bet slip for AI
+                    analysis
+                  </Text>
 
-      {renderPaywallModal()}
+                  <View style={styles.uploadButtons}>
+                    <TouchableOpacity
+                      style={[styles.uploadButton, styles.cameraButton]}
+                      onPress={takePicture}
+                    >
+                      <Ionicons name="camera-outline" size={24} color="#fff" />
+                      <Text style={styles.uploadButtonText}>Take Photo</Text>
+                    </TouchableOpacity>
 
-      <Modal visible={uploading} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <LottieView
-            source={require("../assets/scanning.json")}
-            autoPlay
-            loop
-            style={styles.lottie}
-          />
-          <Text style={styles.modalText}>Scanning your bet slip...</Text>
-        </View>
-      </Modal>
+                    <TouchableOpacity
+                      style={[styles.uploadButton, styles.galleryButton]}
+                      onPress={pickImage}
+                    >
+                      <Ionicons name="images-outline" size={24} color="#fff" />
+                      <Text style={styles.uploadButtonText}>Gallery</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.analysisSection}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{ uri: image }}
+                    style={styles.previewImage}
+                    resizeMode="contain"
+                  />
+                  <TouchableOpacity
+                    style={styles.changeImageButton}
+                    onPress={pickImage}
+                  >
+                    <Ionicons name="camera-outline" size={20} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+
+                {!slipInfo && (
+                  <TouchableOpacity
+                    style={[
+                      styles.analyzeButton,
+                      uploading && styles.analyzeButtonDisabled,
+                    ]}
+                    onPress={uploadImage}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator color="#ffffff" size="small" />
+                        <Text style={styles.loadingText}>
+                          Analyzing slip...
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        <MaterialCommunityIcons
+                          name="lightning-bolt"
+                          size={22}
+                          color="#fff"
+                        />
+                        <Text style={styles.buttonText}>Analyze Bet Slip</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={resetAnalysis}
+                >
+                  <Text style={styles.clearButtonText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {renderSlipInfo()}
+          </ScrollView>
+
+          {renderPaywallModal()}
+
+          <Modal visible={uploading} transparent animationType="slide">
+            <View style={styles.modalContainer}>
+              <LottieView
+                source={require("../assets/scanning.json")}
+                autoPlay
+                loop
+                style={styles.lottie}
+              />
+              <Text style={styles.modalText}>Scanning your bet slip...</Text>
+            </View>
+          </Modal>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -723,6 +851,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#101426",
   },
+  // Splash Screen Styles
+  splashContainer: {
+    position: "absolute",
+    width: width,
+    height: height,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#101426",
+    zIndex: 1000,
+  },
+  splashLogoContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  splashLogoImage: {
+    width: 80,
+    height: 80,
+    marginBottom: 20,
+  },
+  logoGlow: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(119, 137, 255, 0.15)",
+    top: -10,
+    left: -10,
+  },
+  splashAppTitle: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: 8,
+  },
+  splashAppTagline: {
+    fontSize: 16,
+    color: "#7789FF",
+  },
+  // Main App Styles
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -1227,5 +1394,29 @@ const styles = StyleSheet.create({
     color: "#7789FF",
     fontSize: 14,
     fontWeight: "600",
+  },
+  // New component for trial banner
+  trialBanner: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  trialBannerText: {
+    color: "#FFD700",
+    fontWeight: "bold",
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  // New style for legal text
+  legalText: {
+    color: "#8A94B0",
+    fontSize: 12,
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 16,
   },
 });

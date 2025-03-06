@@ -232,7 +232,7 @@ export default function Terms({ navigation }) {
             If you have any questions about these Terms, please contact us at:
           </TermsParagraph>
           <TermsParagraph>Parlay Pal</TermsParagraph>
-          <TermsParagraph>Email: legal@parlaypal.com</TermsParagraph>
+          <TermsParagraph>Email: parlaypalai@gmail.com</TermsParagraph>
         </TermsSection>
 
         <View style={styles.footer}>
