@@ -198,6 +198,18 @@ export default function Home({ navigation }) {
   }, [slipInfo]);
 
   const pickImage = async () => {
+    // Request permission to access media library
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "Parlay Pal needs access to your photo library to upload a bet slip."
+      );
+      return;
+    }
+
+    // Launch image picker
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,

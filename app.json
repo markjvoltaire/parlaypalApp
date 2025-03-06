@@ -2,7 +2,7 @@
   "expo": {
     "name": "Parlay Pal",
     "slug": "parlayPal",
-    "version": "1.0.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/parlaypalIcon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.markjvoltaire.parlayPal",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Parlay Pal needs access to your photo library to allow you to upload images, enabling analysis enhance your bet slip.",
+        "PrivacyPolicyUrl": "https://parlaypalterms.onrender.com"
       }
     },
     "android": {
