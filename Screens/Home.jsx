@@ -223,29 +223,6 @@ export default function Home({ navigation }) {
     }
   };
 
-  const takePicture = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission Denied",
-        "Camera access is required to take pictures."
-      );
-      return;
-    }
-
-    let result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-      setSlipInfo(null);
-    }
-  };
-
   const uploadImage = async () => {
     if (!image) {
       Alert.alert("Please select an image first");
@@ -764,14 +741,6 @@ export default function Home({ navigation }) {
                   </Text>
 
                   <View style={styles.uploadButtons}>
-                    <TouchableOpacity
-                      style={[styles.uploadButton, styles.cameraButton]}
-                      onPress={takePicture}
-                    >
-                      <Ionicons name="camera-outline" size={24} color="#fff" />
-                      <Text style={styles.uploadButtonText}>Take Photo</Text>
-                    </TouchableOpacity>
-
                     <TouchableOpacity
                       style={[styles.uploadButton, styles.galleryButton]}
                       onPress={pickImage}
