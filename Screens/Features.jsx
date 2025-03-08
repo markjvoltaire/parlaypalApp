@@ -182,9 +182,7 @@ export default function Features({ navigation }) {
 
           <View style={styles.benefitItem}>
             <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.benefitsText}>
-              Unlimited uploads and result sharing
-            </Text>
+            <Text style={styles.benefitsText}>Unlimited uploads</Text>
           </View>
         </View>
 

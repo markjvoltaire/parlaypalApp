@@ -602,8 +602,7 @@ export default function Home({ navigation }) {
                   </View>
                   <Text style={styles.uploadTitle}>Upload Your Bet Slip</Text>
                   <Text style={styles.uploadDescription}>
-                    Take a photo or select an image of your bet slip for AI
-                    analysis
+                    select an image of your bet slip for AI analysis
                   </Text>
 
                   <View style={styles.uploadButtons}>
@@ -694,7 +693,7 @@ export default function Home({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#1C1C1E",
+    backgroundColor: "#101426",
   },
   // Splash Screen Styles
   splashContainer: {
