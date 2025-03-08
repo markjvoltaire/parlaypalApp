@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import Purchases from "react-native-purchases";
 
@@ -16,9 +17,13 @@ Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 export default function Features({ navigation }) {
   const [products, setProducts] = useState([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [processingPurchase, setProcessingPurchase] = useState(false);
+  const [processingRestore, setProcessingRestore] = useState(false);
 
   const handlePurchase = async (packageToPurchase) => {
     try {
+      setProcessingPurchase(true);
       const { customerInfo } = await Purchases.purchasePackage(
         packageToPurchase
       );
@@ -38,6 +43,8 @@ export default function Features({ navigation }) {
           "There was a problem with your purchase. Please try again."
         );
       }
+    } finally {
+      setProcessingPurchase(false);
     }
   };
 
@@ -56,10 +63,35 @@ export default function Features({ navigation }) {
     );
   };
 
+  const handleRestorePurchases = async () => {
+    try {
+      setProcessingRestore(true);
+      const customerInfo = await Purchases.restorePurchases();
+
+      if (
+        customerInfo.activeSubscriptions &&
+        customerInfo.activeSubscriptions.length > 0
+      ) {
+        navigation.navigate("AccessGranted");
+        Alert.alert("Success", "Your purchases have been restored!");
+      } else {
+        Alert.alert(
+          "No Purchases Found",
+          "No active subscriptions were found to restore."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to restore purchases. Please try again.");
+    } finally {
+      setProcessingRestore(false);
+    }
+  };
+
   // Fetch products from RevenueCat when component mounts
   useEffect(() => {
     const checkSubscriptionStatus = async () => {
       try {
+        setLoading(true);
         const customerInfo = await Purchases.getCustomerInfo();
         console.log("Customer Info:", customerInfo);
 
@@ -85,11 +117,26 @@ export default function Features({ navigation }) {
         }
       } catch (error) {
         console.error("Error fetching customer info:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     checkSubscriptionStatus();
   }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0A84FF" />
+          <Text style={styles.loadingText}>
+            Loading subscription options...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,26 +148,50 @@ export default function Features({ navigation }) {
           loop
           style={styles.lottie}
         />
+
         {/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.title}>Unlock AI-Powered Bet Analysis</Text>
-          <Text style={styles.boldOffer}>
-            New users enjoy a 3-day free trial then only $4.99 per week.
-          </Text>
+          <View style={styles.offerContainer}>
+            <Text style={styles.freeTrialTag}>First Time Users</Text>
+            <Text style={styles.boldOffer}>
+              Start with a{" "}
+              <Text style={styles.highlightText}>3-DAY FREE TRIAL</Text>
+            </Text>
+            <Text style={styles.pricingText}>
+              Then just <Text style={styles.priceHighlight}>$4.99/week</Text>
+            </Text>
+          </View>
         </View>
 
         {/* Benefits Description */}
-        <Text style={styles.benefitsText}>
-          Experience lightning-fast insights on your bet slips. Get detailed
-          odds analysis, risk assessments, and winning predictions—all powered
-          by advanced AI.
-          {"\n\n"}
-          Plus, enjoy unlimited uploads and share your results with friends.
-        </Text>
+        <View style={styles.benefitsContainer}>
+          <Text style={styles.benefitsTitle}>What You'll Get:</Text>
+          <View style={styles.benefitItem}>
+            <Text style={styles.bulletPoint}>•</Text>
+            <Text style={styles.benefitsText}>
+              Lightning-fast insights on your bet slips
+            </Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.bulletPoint}>•</Text>
+            <Text style={styles.benefitsText}>
+              Detailed odds analysis and risk assessments
+            </Text>
+          </View>
+
+          <View style={styles.benefitItem}>
+            <Text style={styles.bulletPoint}>•</Text>
+            <Text style={styles.benefitsText}>
+              Unlimited uploads and result sharing
+            </Text>
+          </View>
+        </View>
 
         {/* Call-to-Action: Purchase */}
         <TouchableOpacity
           style={styles.subscribeButton}
+          disabled={processingPurchase}
           onPress={() => {
             if (products.length > 0) {
               handlePurchase(products[0]);
@@ -129,27 +200,38 @@ export default function Features({ navigation }) {
             }
           }}
         >
-          <Text style={styles.buttonText}>Join Now</Text>
+          {processingPurchase ? (
+            <View style={styles.buttonContent}>
+              <ActivityIndicator size="small" color="white" />
+              <Text style={[styles.buttonText, styles.processingText]}>
+                Processing...
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.buttonText}>Join Parlay Pal</Text>
+          )}
         </TouchableOpacity>
+
+        <Text style={styles.cancelText}>
+          Cancel anytime. No commitment required.
+        </Text>
 
         {/* Restore Purchases */}
         <TouchableOpacity
           style={styles.otherPlansButton}
-          onPress={async () => {
-            try {
-              const customerInfo = await Purchases.restorePurchases();
-              if (
-                customerInfo.activeSubscriptions &&
-                customerInfo.activeSubscriptions.length > 0
-              ) {
-                setIsSubscribed(true);
-              }
-            } catch (error) {
-              console.error("Error restoring purchases:", error);
-            }
-          }}
+          disabled={processingRestore}
+          onPress={handleRestorePurchases}
         >
-          <Text style={styles.otherPlansText}>Restore Purchases</Text>
+          {processingRestore ? (
+            <View style={styles.restoreContent}>
+              <ActivityIndicator size="small" color="#0A84FF" />
+              <Text style={[styles.otherPlansText, styles.processingText]}>
+                Restoring...
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.otherPlansText}>Restore Purchases</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -160,6 +242,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1C1C1E",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: "#8E8E93",
+    textAlign: "center",
   },
   content: {
     flex: 1,
@@ -172,22 +266,71 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: "bold",
     color: "white",
     textAlign: "center",
-    marginBottom: 25,
-    lineHeight: 40,
+    marginBottom: 20,
+    lineHeight: 36,
+  },
+  offerContainer: {
+    backgroundColor: "rgba(10, 132, 255, 0.1)",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "rgba(10, 132, 255, 0.3)",
+  },
+  freeTrialTag: {
+    color: "#0A84FF",
+    fontWeight: "bold",
+    fontSize: 14,
+    marginBottom: 8,
   },
   boldOffer: {
     fontWeight: "bold",
     color: "white",
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  highlightText: {
+    color: "#0A84FF",
+    fontSize: 20,
+  },
+  pricingText: {
+    color: "#8E8E93",
+    fontSize: 16,
+  },
+  priceHighlight: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  benefitsContainer: {
+    width: "100%",
+    marginBottom: 25,
+  },
+  benefitsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginBottom: 12,
+  },
+  benefitItem: {
+    flexDirection: "row",
+    marginBottom: 8,
+    alignItems: "flex-start",
+  },
+  bulletPoint: {
+    color: "#0A84FF",
+    fontSize: 18,
+    marginRight: 8,
+    lineHeight: 24,
   },
   benefitsText: {
-    fontSize: 17,
+    fontSize: 16,
     color: "#8E8E93",
-    textAlign: "center",
-    marginBottom: 30,
+    flex: 1,
     lineHeight: 24,
   },
   subscribeButton: {
@@ -196,12 +339,30 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 10,
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 12,
   },
   buttonText: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  restoreContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  processingText: {
+    marginLeft: 8,
+  },
+  cancelText: {
+    color: "#8E8E93",
+    fontSize: 14,
+    marginBottom: 15,
   },
   otherPlansButton: {
     padding: 10,
@@ -211,7 +372,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   lottie: {
-    width: 300,
-    height: 300,
+    width: 250,
+    height: 250,
   },
 });

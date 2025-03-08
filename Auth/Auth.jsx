@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "../Screens/Home";
 import Profile from "../Screens/Profile";
@@ -15,13 +15,19 @@ export default function Auth() {
   const Stack = createNativeStackNavigator();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const isFetchingRef = useRef(false); // flag to prevent concurrent requests
 
-  // Fetch products from RevenueCat when component mounts
+  // Fetch products and subscription status from RevenueCat when component mounts
   useEffect(() => {
     const checkSubscriptionStatus = async () => {
+      if (isFetchingRef.current) {
+        // Already fetching, so skip this call
+        return;
+      }
+      isFetchingRef.current = true;
       try {
-        setIsLoading(true); // Start loading
+        setIsLoading(true); // start loading
         const customerInfo = await Purchases.getCustomerInfo();
         console.log("Customer Info!:", customerInfo);
 
@@ -46,9 +52,16 @@ export default function Auth() {
           setProducts(offerings.current.availablePackages);
         }
       } catch (error) {
-        console.error("Error fetching customer info:", error);
+        if (error.message && error.message.includes("already in progress")) {
+          console.warn(
+            "Operation already in progress. Skipping duplicate call."
+          );
+        } else {
+          console.error("Error fetching customer info:", error);
+        }
       } finally {
-        setIsLoading(false); // End loading regardless of result
+        isFetchingRef.current = false;
+        setIsLoading(false); // end loading regardless of result
       }
     };
 
@@ -61,7 +74,7 @@ export default function Auth() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color="white" />
       </View>
     );
   }
