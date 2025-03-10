@@ -153,13 +153,11 @@ export default function Features({ navigation }) {
         <View style={styles.header}>
           <Text style={styles.title}>Unlock AI-Powered Bet Analysis</Text>
           <View style={styles.offerContainer}>
-            <Text style={styles.freeTrialTag}>First Time Users</Text>
-            <Text style={styles.boldOffer}>
-              Start with a{" "}
-              <Text style={styles.highlightText}>3-DAY FREE TRIAL</Text>
-            </Text>
-            <Text style={styles.pricingText}>
-              Then just <Text style={styles.priceHighlight}>$4.99/week</Text>
+            {/* Billed amount is the most prominent element */}
+            <Text style={styles.billedPrice}>$4.99/week</Text>
+            <Text style={styles.billingInfo}>
+              After a 3-day free trial, your subscription will renew
+              automatically.
             </Text>
           </View>
         </View>
@@ -179,7 +177,6 @@ export default function Features({ navigation }) {
               Detailed odds analysis and risk assessments
             </Text>
           </View>
-
           <View style={styles.benefitItem}>
             <Text style={styles.bulletPoint}>•</Text>
             <Text style={styles.benefitsText}>Unlimited uploads</Text>
@@ -280,29 +277,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(10, 132, 255, 0.3)",
   },
-  freeTrialTag: {
-    color: "#0A84FF",
-    fontWeight: "bold",
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  boldOffer: {
+  billedPrice: {
+    fontSize: 24, // Larger font size for emphasis
     fontWeight: "bold",
     color: "white",
-    fontSize: 18,
     marginBottom: 4,
   },
-  highlightText: {
-    color: "#0A84FF",
-    fontSize: 20,
-  },
-  pricingText: {
-    color: "#8E8E93",
+  billingInfo: {
     fontSize: 16,
-  },
-  priceHighlight: {
-    color: "white",
-    fontWeight: "bold",
+    color: "#8E8E93",
+    textAlign: "center",
   },
   benefitsContainer: {
     width: "100%",
@@ -370,7 +354,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   lottie: {
-    width: 250,
-    height: 250,
+    width: 200,
+    height: 200,
+    bottom: 10,
   },
 });

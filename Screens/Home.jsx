@@ -693,7 +693,7 @@ export default function Home({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#101426",
+    backgroundColor: "#111427",
   },
   // Splash Screen Styles
   splashContainer: {

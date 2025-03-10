@@ -68,8 +68,6 @@ export default function Auth() {
     checkSubscriptionStatus();
   }, []);
 
-  console.log("isSubscribed! :>> ", isSubscribed);
-
   // Show a loading indicator while subscription status is being checked
   if (isLoading) {
     return (

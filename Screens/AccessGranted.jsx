@@ -694,7 +694,7 @@ export default function AccessGranted({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#1C1C1E",
+    backgroundColor: "#111427",
   },
   // Splash Screen Styles
   splashContainer: {
