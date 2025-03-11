@@ -48,14 +48,14 @@ export default function Features({ navigation }) {
     }
   };
 
-  // Refactored function to handle new subscription success
+  // // Refactored function to handle new subscription success
   const handleNewSubscription = () => {
     Alert.alert(
-      "Subscription Successful",
-      "Thank you for subscribing!",
+      "Subscription Activated",
+      "Your premium access is now unlocked. Enjoy!",
       [
         {
-          text: "OK",
+          text: "Continue",
           onPress: () => navigation.navigate("AccessGranted"),
         },
       ],
@@ -87,7 +87,7 @@ export default function Features({ navigation }) {
     }
   };
 
-  // Fetch products from RevenueCat when component mounts
+  // // Fetch products from RevenueCat when component mounts
   useEffect(() => {
     const checkSubscriptionStatus = async () => {
       try {

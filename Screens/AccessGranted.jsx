@@ -320,32 +320,6 @@ export default function AccessGranted({ navigation }) {
     });
   };
 
-  const handlePurchase = async (packageToPurchase) => {
-    try {
-      const { customerInfo } = await Purchases.purchasePackage(
-        packageToPurchase
-      );
-
-      // Check if the user is now subscribed
-      if (
-        customerInfo.activeSubscriptions &&
-        customerInfo.activeSubscriptions.length > 0
-      ) {
-        setIsSubscribed(true);
-        hidePaywallModal();
-        // Proceed with upload if they just subscribed
-        uploadImage();
-      }
-    } catch (error) {
-      if (!error.userCancelled) {
-        Alert.alert(
-          "Error",
-          "There was a problem with your purchase. Please try again."
-        );
-      }
-    }
-  };
-
   const resetAnalysis = () => {
     setImage(null);
     setSlipInfo(null);

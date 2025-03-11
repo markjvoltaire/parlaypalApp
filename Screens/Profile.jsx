@@ -143,7 +143,10 @@ export default function Profile({ navigation }) {
                 <Text style={styles.premiumText}>Premium</Text>
               </View>
             ) : (
-              <TouchableOpacity style={styles.upgradeBadge}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Showcase")}
+                style={styles.upgradeBadge}
+              >
                 <MaterialCommunityIcons
                   name="crown-outline"
                   size={16}
