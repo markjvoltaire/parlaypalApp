@@ -15,7 +15,7 @@ export default function Auth() {
   const Stack = createNativeStackNavigator();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const isFetchingRef = useRef(false); // flag to prevent concurrent requests
 
   // Fetch products and subscription status from RevenueCat when component mounts
