@@ -10,12 +10,19 @@ import {
   ScrollView,
   Dimensions,
   Animated,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import Purchases from "react-native-purchases";
 
 const { width } = Dimensions.get("window");
 
+// Replace 'appl_uPPCiaHpkTLNkrlhOikrUMWLaBH' with your actual RevenueCat API key
+Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+
 export default function Welcome({ navigation }) {
   const [showSplash, setShowSplash] = useState(true);
+  const [processingRestore, setProcessingRestore] = useState(false);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -78,12 +85,36 @@ export default function Welcome({ navigation }) {
             source={require("../assets/Activity.png")}
             style={styles.splashLogoImage}
           />
-
           <Text style={styles.splashAppTitle}>Parlay Pal</Text>
-          {/* <Text style={styles.splashAppTagline}>AI-Powered Bet Analysis</Text> */}
         </Animated.View>
       </Animated.View>
     );
+  };
+
+  // Function to restore purchases
+  const handleRestorePurchases = async () => {
+    try {
+      setProcessingRestore(true);
+      const customerInfo = await Purchases.restorePurchases();
+
+      // Check if there's an active subscription
+      if (
+        customerInfo.activeSubscriptions &&
+        customerInfo.activeSubscriptions.length > 0
+      ) {
+        navigation.navigate("AccessGranted");
+        Alert.alert("Success", "Your purchases have been restored!");
+      } else {
+        Alert.alert(
+          "No Purchases Found",
+          "No active subscriptions were found to restore."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to restore purchases. Please try again.");
+    } finally {
+      setProcessingRestore(false);
+    }
   };
 
   // Main content component with fade-in animation
@@ -128,22 +159,12 @@ export default function Welcome({ navigation }) {
           </ScrollView>
 
           <View style={styles.ctaSection}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 10,
-              }}
-            >
+            <View style={styles.headerRow}>
               <Image
                 source={require("../assets/Activity.png")}
                 style={{ width: 30, height: 30, marginRight: 15 }}
               />
-              <Text
-                style={{ fontSize: 22, fontWeight: "bold", color: "#ffffff" }}
-              >
-                Parlay Pal
-              </Text>
+              <Text style={styles.appTitle}>Parlay Pal</Text>
             </View>
             <View style={styles.styledTextContainer}>
               <Text style={styles.ctaTitleWhite}>Know Your Odds</Text>
@@ -152,12 +173,28 @@ export default function Welcome({ navigation }) {
                 <Text style={styles.ctaTitleGreen}>You Bet</Text>
               </View>
             </View>
+
+            {/* 'Get Started' Button */}
             <TouchableOpacity
               onPress={() => navigation.navigate("Home")}
               style={styles.button}
             >
               <Text style={styles.buttonText}>Get Started</Text>
             </TouchableOpacity>
+
+            {/* Pressable text for 'Restore Purchase' */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              {processingRestore && (
+                <ActivityIndicator
+                  size="small"
+                  color="#fff"
+                  style={{ marginRight: 10 }}
+                />
+              )}
+              <TouchableOpacity onPress={handleRestorePurchases}>
+                <Text style={styles.restoreText}>Restore Purchase</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
       </Animated.View>
@@ -204,24 +241,12 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
   },
-  logoGlow: {
-    position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#1E90FF",
-    zIndex: -1,
-  },
   splashAppTitle: {
     marginTop: 20,
     fontSize: 28,
     fontWeight: "bold",
     color: "white",
     marginBottom: 5,
-  },
-  splashAppTagline: {
-    fontSize: 16,
-    color: "white",
   },
   // Main Content Styles
   cardContainer: {
@@ -245,6 +270,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingBottom: 30,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  appTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#ffffff",
   },
   styledTextContainer: {
     alignItems: "center",
@@ -288,5 +323,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
+  },
+  restoreText: {
+    marginTop: 6,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+    textDecorationLine: "underline",
   },
 });

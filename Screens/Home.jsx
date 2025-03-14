@@ -24,17 +24,16 @@ Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 
 const { width, height } = Dimensions.get("window");
 
-// API URL - Make sure to update this to your actual backend URL
+// Update this to your actual backend URL
 const API_URL = "https://parlaypal.onrender.com";
 
 // Inline Splash Screen Component
 const SplashScreen = ({ onFinish }) => {
-  // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
-    // Start animations when component mounts
+    // Start animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -49,18 +48,15 @@ const SplashScreen = ({ onFinish }) => {
       }),
     ]).start();
 
-    // Set a timeout for how long to display the splash screen
+    // Hide splash after 2.5s
     const timer = setTimeout(() => {
-      // Start fade out animation
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 100,
-          delay: 100,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Call the onFinish callback when animation completes
+      // Fade out
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 100,
+        delay: 100,
+        useNativeDriver: true,
+      }).start(() => {
         if (onFinish) onFinish();
       });
     }, 2500);
@@ -89,7 +85,6 @@ const SplashScreen = ({ onFinish }) => {
           source={require("../assets/Activity.png")}
           style={styles.splashLogoImage}
         />
-
         {/* Glow effect around logo */}
         <Animated.View
           style={[
@@ -110,7 +105,6 @@ const SplashScreen = ({ onFinish }) => {
             },
           ]}
         />
-
         <Text style={styles.splashAppTitle}>Parlay Pal</Text>
         <Text style={styles.splashAppTagline}>AI-Powered Bet Analysis</Text>
       </Animated.View>
@@ -121,21 +115,21 @@ const SplashScreen = ({ onFinish }) => {
 export default function Home({ navigation }) {
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [slipInfo, setSlipInfo] = useState(null);
+  // Unified state for all parlay data
+  const [analysisResponse, setAnalysisResponse] = useState(null);
+
+  // We no longer use slipInfo – everything merges into analysisResponse
+  // const [slipInfo, setSlipInfo] = useState(null);
+
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [products, setProducts] = useState([]);
   const [showSplash, setShowSplash] = useState(true);
   const scrollViewRef = useRef(null);
 
-  // Animation values for slipInfo appearance
+  // Animation values for the analysis panel
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-
-  // Animation value for paywall modal
-  const paywallSlideAnim = useRef(
-    new Animated.Value(Dimensions.get("window").height)
-  ).current;
 
   // Handle splash screen finish
   const handleSplashFinish = () => {
@@ -177,9 +171,9 @@ export default function Home({ navigation }) {
     checkSubscriptionStatus();
   }, []);
 
-  // Trigger animation when slipInfo is updated
+  // Trigger animation when analysisResponse updates
   useEffect(() => {
-    if (slipInfo) {
+    if (analysisResponse) {
       fadeAnim.setValue(0);
       slideAnim.setValue(20);
       Animated.parallel([
@@ -195,12 +189,11 @@ export default function Home({ navigation }) {
         }),
       ]).start();
     }
-  }, [slipInfo]);
+  }, [analysisResponse]);
 
+  // Image picker
   const pickImage = async () => {
-    // Request permission to access media library
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (status !== "granted") {
       Alert.alert(
         "Permission Required",
@@ -209,7 +202,6 @@ export default function Home({ navigation }) {
       return;
     }
 
-    // Launch image picker
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
@@ -219,10 +211,29 @@ export default function Home({ navigation }) {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
-      setSlipInfo(null);
+      // Reset analysis
+      setAnalysisResponse(null);
     }
   };
 
+  // Function to strip triple backticks, etc.
+  function stripMarkdownCodeFence(str = "") {
+    let cleaned = str.trim();
+
+    if (cleaned.startsWith("```json")) {
+      cleaned = cleaned.replace(/^```json/, "");
+    } else if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```/, "");
+    }
+
+    if (cleaned.endsWith("```")) {
+      cleaned = cleaned.substring(0, cleaned.lastIndexOf("```"));
+    }
+
+    return cleaned.trim();
+  }
+
+  // Upload image & parse final JSON
   const uploadImage = async () => {
     if (!image) {
       Alert.alert("Please select an image first");
@@ -253,41 +264,64 @@ export default function Home({ navigation }) {
       const response = await fetch(`${API_URL}/upload`, {
         method: "POST",
         body: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
       });
 
       const responseData = await response.json();
 
       if (response.ok) {
-        console.log("Upload successful", responseData.slipInfo);
+        // Instead of storing slipInfo and advancedAnalysis separately,
+        // let's merge them into one final object for the UI.
+        let mergedData = {};
 
-        if (
-          typeof responseData.slipInfo === "string" &&
-          responseData.slipInfo.trim().startsWith("{")
-        ) {
-          try {
-            setSlipInfo(JSON.parse(responseData.slipInfo));
-            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-          } catch (error) {
-            console.error("JSON parsing error:", error);
-            setSlipInfo({
-              rawData: responseData.slipInfo,
-              _note: "Could not parse JSON data",
-            });
+        // If slipInfo exists, parse or store it:
+        if (responseData.slipInfo) {
+          if (
+            typeof responseData.slipInfo === "string" &&
+            responseData.slipInfo.trim().startsWith("{")
+          ) {
+            try {
+              mergedData = JSON.parse(responseData.slipInfo);
+            } catch (error) {
+              console.error("JSON parsing error for slipInfo:", error);
+              mergedData = {
+                rawData: responseData.slipInfo,
+                _note: "Could not parse JSON data",
+              };
+            }
+          } else if (typeof responseData.slipInfo === "object") {
+            mergedData = responseData.slipInfo;
           }
-        } else {
-          setSlipInfo(responseData.slipInfo);
-          scrollViewRef.current?.scrollTo({ y: 0, animated: true });
         }
+
+        // Process advancedAnalysis
+        let parsedAnalysis = responseData.advancedAnalysis;
+        if (typeof parsedAnalysis === "string") {
+          const cleanedString = stripMarkdownCodeFence(parsedAnalysis);
+          try {
+            parsedAnalysis = JSON.parse(cleanedString);
+          } catch (error) {
+            console.error("Error parsing advancedAnalysis:", error);
+            parsedAnalysis = {};
+          }
+        } else if (typeof parsedAnalysis !== "object") {
+          parsedAnalysis = {};
+        }
+
+        // Merge slipInfo and advancedAnalysis together
+        mergedData = { ...mergedData, ...parsedAnalysis };
+
+        // Now we have one unified object
+        setAnalysisResponse(mergedData);
+
+        // Scroll to top
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       } else {
         Alert.alert(
           "Analysis Failed",
           "Unable to process this bet slip. Please try a clearer image."
         );
-        console.log("Upload failed", responseData);
-        setSlipInfo(null);
+        console.error("Upload failed", responseData);
+        setAnalysisResponse(null);
       }
     } catch (error) {
       Alert.alert(
@@ -295,74 +329,31 @@ export default function Home({ navigation }) {
         "Please check your internet connection and try again."
       );
       console.error("Upload error:", error);
-      setSlipInfo(null);
+      setAnalysisResponse(null);
     } finally {
       setUploading(false);
     }
   };
 
-  const showPaywallModal = () => {
-    setShowPaywall(true);
-    Animated.timing(paywallSlideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const hidePaywallModal = () => {
-    Animated.timing(paywallSlideAnim, {
-      toValue: Dimensions.get("window").height,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowPaywall(false);
-    });
-  };
-
-  const handlePurchase = async (packageToPurchase) => {
-    try {
-      const { customerInfo } = await Purchases.purchasePackage(
-        packageToPurchase
-      );
-
-      // Check if the user is now subscribed
-      if (
-        customerInfo.activeSubscriptions &&
-        customerInfo.activeSubscriptions.length > 0
-      ) {
-        setIsSubscribed(true);
-        hidePaywallModal();
-        // Proceed with upload if they just subscribed
-        uploadImage();
-      }
-    } catch (error) {
-      if (!error.userCancelled) {
-        Alert.alert(
-          "Error",
-          "There was a problem with your purchase. Please try again."
-        );
-      }
-    }
-  };
-
+  // Clear everything
   const resetAnalysis = () => {
     setImage(null);
-    setSlipInfo(null);
+    setAnalysisResponse(null);
   };
 
+  // Probability bar for entire parlay
   const renderProbabilityIndicator = (probability) => {
-    if (!probability && probability !== 0) return null;
+    if (probability === undefined || probability === null) return null;
 
-    let color = "#FF4D4F"; // Red for low probability
+    let color = "#FF4D4F"; // Red
     let message = "High Risk";
 
     if (probability > 30) {
-      color = "#FAAD14"; // Yellow/orange for medium
+      color = "#FAAD14"; // Orange
       message = "Medium Risk";
     }
     if (probability > 60) {
-      color = "#52C41A"; // Green for good probability
+      color = "#52C41A"; // Green
       message = "Lower Risk";
     }
 
@@ -387,17 +378,13 @@ export default function Home({ navigation }) {
     );
   };
 
+  // Probability bar for individual bets
   const renderBetProbability = (probability) => {
-    if (!probability && probability !== 0) return null;
+    if (probability === undefined || probability === null) return null;
 
     let color = "#FF4D4F";
-
-    if (probability > 30) {
-      color = "#FAAD14";
-    }
-    if (probability > 60) {
-      color = "#52C41A";
-    }
+    if (probability > 30) color = "#FAAD14";
+    if (probability > 60) color = "#52C41A";
 
     return (
       <View style={styles.betProbabilityContainer}>
@@ -421,8 +408,19 @@ export default function Home({ navigation }) {
     );
   };
 
-  const renderSlipInfo = () => {
-    if (!slipInfo) return null;
+  // Render the unified parlay analysis
+  const renderParlayAnalysis = () => {
+    if (!analysisResponse) return null;
+
+    // Destructure fields from analysisResponse
+    const {
+      stake,
+      parlay_odds,
+      parlay_probability,
+      parlay_summary,
+      leagues,
+      responsible_betting_reminder,
+    } = analysisResponse;
 
     return (
       <Animated.View
@@ -434,6 +432,7 @@ export default function Home({ navigation }) {
           },
         ]}
       >
+        {/* Header */}
         <View style={styles.slipInfoHeader}>
           <Text style={styles.slipInfoTitle}>Bet Analysis</Text>
           <TouchableOpacity
@@ -444,53 +443,59 @@ export default function Home({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Summary Card with stake, odds, probability */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Parlay Odds</Text>
               <Text style={styles.summaryValue}>
-                {slipInfo.parlay_odds ? `+${slipInfo.parlay_odds}` : "N/A"}
+                {parlay_odds ? `+${parlay_odds}` : "N/A"}
               </Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Stake</Text>
               <Text style={styles.summaryValue}>
-                {slipInfo.stake ? `$${slipInfo.stake}` : "N/A"}
+                {stake ? `$${stake}` : "N/A"}
               </Text>
             </View>
           </View>
 
           <View style={styles.probabilitySection}>
             <Text style={styles.probabilityLabel}>Win Probability</Text>
-            {renderProbabilityIndicator(slipInfo.parlay_probability)}
+            {renderProbabilityIndicator(parlay_probability)}
           </View>
         </View>
 
+        {/* AI Insight Card */}
         <View style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <MaterialCommunityIcons name="robot" size={20} color="#7789FF" />
             <Text style={styles.insightTitle}>AI Insight</Text>
           </View>
-          <Text style={styles.insightText}>
-            This parlay has a{" "}
-            <Text style={styles.insightHighlight}>
-              {slipInfo.parlay_probability
-                ? slipInfo.parlay_probability.toFixed(2)
-                : "N/A"}
-              %
-            </Text>{" "}
-            chance of winning based on current odds.
-            {slipInfo.parlay_probability < 30
-              ? " Consider placing single bets instead for better chances."
-              : " Remember to bet responsibly and within your limits."}
-          </Text>
+
+          {/* Show parlay_summary if available */}
+          {parlay_summary?.expected_outcome && (
+            <Text style={styles.insightText}>
+              {parlay_summary.expected_outcome}
+            </Text>
+          )}
+          {parlay_summary?.risk_assessment && (
+            <Text style={styles.insightText}>
+              {parlay_summary.risk_assessment}
+            </Text>
+          )}
+          {parlay_summary?.alternative_suggestions?.map((item, idx) => (
+            <Text style={styles.insightText} key={`alt-${idx}`}>
+              - {item}
+            </Text>
+          ))}
         </View>
 
+        {/* Bet Details (Leagues, Bets) */}
         <Text style={styles.sectionTitle}>Bet Details</Text>
-
-        {slipInfo.leagues &&
-          slipInfo.leagues.map((league, idx) => (
+        {leagues &&
+          leagues.map((league, idx) => (
             <View key={`league-${idx}`} style={styles.leagueContainer}>
               <View style={styles.leagueHeader}>
                 <MaterialCommunityIcons
@@ -512,17 +517,19 @@ export default function Home({ navigation }) {
               {league.parlay_bets &&
                 league.parlay_bets.map((bet, betIdx) => (
                   <View key={`bet-${betIdx}`} style={styles.betContainer}>
+                    {/* Bet Header: detail & odds */}
                     <View style={styles.betHeader}>
                       <Text style={styles.betDetail}>
                         {bet.detail || "N/A"}
                       </Text>
                       <View style={styles.oddsTag}>
                         <Text style={styles.oddsText}>
-                          {bet.odds > 0 ? `+${bet.odds}` : bet.odds}
+                          {bet.odds && bet.odds > 0 ? `+${bet.odds}` : bet.odds}
                         </Text>
                       </View>
                     </View>
 
+                    {/* Bet Info Row (Teams, etc.) */}
                     {bet.teams && (
                       <View style={styles.betInfoRow}>
                         <Text style={styles.betInfoKey}>Teams:</Text>
@@ -532,9 +539,36 @@ export default function Home({ navigation }) {
                       </View>
                     )}
 
+                    {/* Probability bar for this bet */}
                     {bet.probability !== undefined &&
                       renderBetProbability(bet.probability)}
 
+                    {/* NEW: Analysis section below probability */}
+                    {bet.analysis && (
+                      <View style={styles.betAnalysisContainer}>
+                        <Text style={styles.analysisHeader}>Analysis</Text>
+
+                        {/* Key Stat */}
+                        <Text style={styles.analysisText}>
+                          <Text style={styles.label}>Key Stat: </Text>
+                          {bet.analysis.key_stat}
+                        </Text>
+
+                        {/* Matchup Consideration */}
+                        <Text style={styles.analysisText}>
+                          <Text style={styles.label}>Matchup: </Text>
+                          {bet.analysis.matchup_consideration}
+                        </Text>
+
+                        {/* Confidence Level */}
+                        <Text style={styles.analysisText}>
+                          <Text style={styles.label}>Confidence: </Text>
+                          {bet.analysis.confidence_level}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Footer (Bet Type, etc.) */}
                     <View style={styles.betFooter}>
                       <View style={styles.betTypeTag}>
                         <Text style={styles.betTypeText}>
@@ -547,12 +581,14 @@ export default function Home({ navigation }) {
             </View>
           ))}
 
-        <View style={styles.disclaimer}>
-          <Text style={styles.disclaimerText}>
-            This analysis is for informational purposes only. Always gamble
-            responsibly.
-          </Text>
-        </View>
+        {/* Responsible Betting Reminder */}
+        {responsible_betting_reminder && (
+          <View style={styles.disclaimer}>
+            <Text style={styles.disclaimerText}>
+              {responsible_betting_reminder}
+            </Text>
+          </View>
+        )}
       </Animated.View>
     );
   };
@@ -560,7 +596,6 @@ export default function Home({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
-
       {showSplash ? (
         <SplashScreen onFinish={handleSplashFinish} />
       ) : (
@@ -591,6 +626,7 @@ export default function Home({ navigation }) {
             showsVerticalScrollIndicator={false}
           >
             {!image ? (
+              // If no image yet, show upload card
               <View style={styles.uploadSection}>
                 <View style={styles.uploadCard}>
                   <View style={styles.uploadIconContainer}>
@@ -602,7 +638,7 @@ export default function Home({ navigation }) {
                   </View>
                   <Text style={styles.uploadTitle}>Upload Your Bet Slip</Text>
                   <Text style={styles.uploadDescription}>
-                    select an image of your bet slip for AI analysis
+                    Select an image of your bet slip for AI analysis
                   </Text>
 
                   <View style={styles.uploadButtons}>
@@ -617,6 +653,7 @@ export default function Home({ navigation }) {
                 </View>
               </View>
             ) : (
+              // If image is chosen, show preview and analyze button
               <View style={styles.analysisSection}>
                 <View style={styles.imageContainer}>
                   <Image
@@ -632,7 +669,8 @@ export default function Home({ navigation }) {
                   </TouchableOpacity>
                 </View>
 
-                {!slipInfo && (
+                {/* Only show "Analyze" if we haven't gotten analysisResponse yet */}
+                {!analysisResponse && (
                   <TouchableOpacity
                     style={[
                       styles.analyzeButton,
@@ -670,9 +708,11 @@ export default function Home({ navigation }) {
               </View>
             )}
 
-            {renderSlipInfo()}
+            {/* Render the unified analysis data */}
+            {renderParlayAnalysis()}
           </ScrollView>
 
+          {/* Uploading Modal */}
           <Modal visible={uploading} transparent animationType="slide">
             <View style={styles.modalContainer}>
               <LottieView
@@ -690,6 +730,9 @@ export default function Home({ navigation }) {
   );
 }
 
+/* -------------------------------------
+ *  Styles (same as your original, just keep them)
+ * ------------------------------------- */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -749,20 +792,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-  },
-  logoContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#4F63E8",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  logoText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
   },
   appTitle: {
     fontSize: 22,
@@ -832,10 +861,6 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "600",
     marginLeft: 8,
-  },
-  cameraButton: {
-    backgroundColor: "#4F63E8",
-    marginRight: 8,
   },
   galleryButton: {
     backgroundColor: "#2C3254",
@@ -1017,10 +1042,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#B0B7C8",
     lineHeight: 20,
-  },
-  insightHighlight: {
-    color: "#ffffff",
-    fontWeight: "bold",
+    marginBottom: 4,
   },
   sectionTitle: {
     fontSize: 18,
@@ -1150,115 +1172,25 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  // Paywall modal styles
-  paywallModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(16,20,38,0.85)",
-    justifyContent: "flex-end",
-  },
-  paywallModalContainer: {
-    backgroundColor: "#1C2135",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "90%",
-  },
-  paywallHeader: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    padding: 16,
-  },
-  paywallCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  paywallContent: {
-    padding: 24,
-    paddingTop: 0,
-    alignItems: "center",
-  },
-  paywallIcon: {
-    marginBottom: 16,
-  },
-  paywallTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  paywallDescription: {
-    fontSize: 16,
-    color: "#B0B7C8",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  featuresContainer: {
-    width: "100%",
-    marginBottom: 32,
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  featureText: {
-    fontSize: 16,
-    color: "#ffffff",
-    marginLeft: 12,
-  },
-  subscriptionButton: {
-    backgroundColor: "#4F63E8",
-    width: "100%",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  subscriptionButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  trialText: {
-    color: "#FFD700",
-    fontSize: 14,
-    marginTop: 4,
-  },
-  restoreButton: {
-    padding: 12,
+  betAnalysisContainer: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+    padding: 8,
+    borderRadius: 8,
     marginTop: 8,
-    marginBottom: 16,
   },
-  restoreButtonText: {
-    color: "#7789FF",
+  analysisHeader: {
     fontSize: 14,
     fontWeight: "600",
+    color: "#ffffff",
+    marginBottom: 4,
   },
-  trialBanner: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255, 215, 0, 0.15)",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    alignItems: "center",
-    marginBottom: 16,
+  analysisText: {
+    fontSize: 13,
+    color: "#B0B7C8",
+    marginBottom: 4,
   },
-  trialBannerText: {
-    color: "#FFD700",
-    fontWeight: "bold",
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  legalText: {
-    color: "#8A94B0",
-    fontSize: 12,
-    textAlign: "center",
-    marginBottom: 16,
-    lineHeight: 16,
+  label: {
+    fontWeight: "600",
+    color: "#ffffff",
   },
 });

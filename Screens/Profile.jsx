@@ -59,6 +59,7 @@ export default function Profile({ navigation }) {
     fetchSubscriptionInfo();
   }, []);
 
+  // Fetch subscription details from RevenueCat
   const fetchSubscriptionInfo = async () => {
     try {
       const customerInfo = await Purchases.getCustomerInfo();
@@ -77,6 +78,33 @@ export default function Profile({ navigation }) {
     }
   };
 
+  // Restore Purchases logic
+  const handleRestorePurchases = async () => {
+    try {
+      setLoading(true);
+      const customerInfo = await Purchases.restorePurchases();
+
+      if (
+        customerInfo.activeSubscriptions &&
+        customerInfo.activeSubscriptions.length > 0
+      ) {
+        // Navigate or unlock premium features
+        navigation.navigate("AccessGranted");
+        Alert.alert("Success", "Your purchases have been restored!");
+      } else {
+        Alert.alert(
+          "No Purchases Found",
+          "No active subscriptions were found to restore."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to restore purchases. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open OS-specific subscription settings
   const openSubscriptionSettings = async () => {
     try {
       const url = Platform.select({
@@ -86,22 +114,14 @@ export default function Profile({ navigation }) {
       });
 
       const canOpen = await Linking.canOpenURL(url);
-
-      if (!canOpen) {
-        throw new Error("Cannot open URL");
-      }
+      if (!canOpen) throw new Error("Cannot open URL");
 
       await Linking.openURL(url);
     } catch (error) {
       Alert.alert(
         "Error",
         "Couldn't open subscription settings. Please check your subscriptions in your device's app store manually.",
-        [
-          {
-            text: "OK",
-            onPress: () => console.log("OK Pressed"),
-          },
-        ]
+        [{ text: "OK", onPress: () => console.log("OK Pressed") }]
       );
     }
   };
@@ -162,6 +182,7 @@ export default function Profile({ navigation }) {
         <AnimatedSection index={1}>
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Subscription Details</Text>
+
             {loading ? (
               <View style={styles.loadingContainer}>
                 <Text style={styles.loadingText}>
@@ -207,6 +228,7 @@ export default function Profile({ navigation }) {
                   </View>
                 </View>
 
+                {/* Manage Subscription Row */}
                 <TouchableOpacity
                   style={styles.row}
                   onPress={openSubscriptionSettings}
@@ -216,6 +238,28 @@ export default function Profile({ navigation }) {
                   </View>
                   <View style={styles.rowContent}>
                     <Text style={styles.rowLabel}>Manage Subscription</Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color="#8A94B0"
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Restore Purchase Row */}
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={handleRestorePurchases}
+                >
+                  <View style={styles.rowIconContainer}>
+                    <Ionicons
+                      name="refresh-circle-outline"
+                      size={20}
+                      color="#7789FF"
+                    />
+                  </View>
+                  <View style={styles.rowContent}>
+                    <Text style={styles.rowLabel}>Restore Purchase</Text>
                     <Ionicons
                       name="chevron-forward"
                       size={20}
@@ -418,22 +462,6 @@ const styles = StyleSheet.create({
   rowValue: {
     fontSize: 16,
     color: "#8A94B0",
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,77,79,0.1)",
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FF4D4F",
-    marginLeft: 8,
   },
   footer: {
     borderTopWidth: 1,
