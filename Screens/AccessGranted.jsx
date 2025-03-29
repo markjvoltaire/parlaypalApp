@@ -26,6 +26,7 @@ const { width, height } = Dimensions.get("window");
 
 // Update this to your actual backend URL
 const API_URL = "https://parlaypal.onrender.com";
+
 // Inline Splash Screen Component
 const SplashScreen = ({ onFinish }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -111,14 +112,11 @@ const SplashScreen = ({ onFinish }) => {
   );
 };
 
-export default function AccessGranted({ navigation }) {
+export default function Home({ navigation }) {
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   // Unified state for all parlay data
   const [analysisResponse, setAnalysisResponse] = useState(null);
-
-  // We no longer use slipInfo – everything merges into analysisResponse
-  // const [slipInfo, setSlipInfo] = useState(null);
 
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -140,7 +138,7 @@ export default function AccessGranted({ navigation }) {
     const checkSubscriptionStatus = async () => {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info:", customerInfo);
+        console.log("Customer Info:", customerInfo.entitlements);
 
         // Check for active subscriptions
         if (
@@ -239,6 +237,8 @@ export default function AccessGranted({ navigation }) {
       return;
     }
 
+    console.log("API_URL :>> ", API_URL);
+
     // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
       navigation.navigate("Showcase");
@@ -251,6 +251,7 @@ export default function AccessGranted({ navigation }) {
       const formData = new FormData();
       const uriParts = image.split(".");
       const fileType = uriParts[uriParts.length - 1];
+      const customerInfo = await Purchases.getCustomerInfo();
 
       formData.append("image", {
         uri: image,
@@ -258,9 +259,9 @@ export default function AccessGranted({ navigation }) {
         type: `image/${fileType}`,
       });
 
-      formData.append("userId", "user123");
+      formData.append("userId", customerInfo);
 
-      const response = await fetch(`${API_URL}/upload`, {
+      const response = await fetch(`${API_URL}/analyze`, {
         method: "POST",
         body: formData,
       });
@@ -729,9 +730,6 @@ export default function AccessGranted({ navigation }) {
   );
 }
 
-/* -------------------------------------
- *  Styles (same as your original, just keep them)
- * ------------------------------------- */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
