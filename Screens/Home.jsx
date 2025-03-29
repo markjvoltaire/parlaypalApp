@@ -118,9 +118,6 @@ export default function Home({ navigation }) {
   // Unified state for all parlay data
   const [analysisResponse, setAnalysisResponse] = useState(null);
 
-  // We no longer use slipInfo – everything merges into analysisResponse
-  // const [slipInfo, setSlipInfo] = useState(null);
-
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [products, setProducts] = useState([]);
@@ -141,7 +138,7 @@ export default function Home({ navigation }) {
     const checkSubscriptionStatus = async () => {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info:", customerInfo);
+        console.log("Customer Info:", customerInfo.entitlements);
 
         // Check for active subscriptions
         if (
@@ -240,6 +237,8 @@ export default function Home({ navigation }) {
       return;
     }
 
+    console.log("API_URL :>> ", API_URL);
+
     // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
       navigation.navigate("Showcase");
@@ -252,6 +251,7 @@ export default function Home({ navigation }) {
       const formData = new FormData();
       const uriParts = image.split(".");
       const fileType = uriParts[uriParts.length - 1];
+      const customerInfo = await Purchases.getCustomerInfo();
 
       formData.append("image", {
         uri: image,
@@ -259,9 +259,9 @@ export default function Home({ navigation }) {
         type: `image/${fileType}`,
       });
 
-      formData.append("userId", "user123");
+      formData.append("userId", customerInfo);
 
-      const response = await fetch(`${API_URL}/upload`, {
+      const response = await fetch(`${API_URL}/analyze`, {
         method: "POST",
         body: formData,
       });
@@ -730,9 +730,6 @@ export default function Home({ navigation }) {
   );
 }
 
-/* -------------------------------------
- *  Styles (same as your original, just keep them)
- * ------------------------------------- */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

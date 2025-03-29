@@ -13,7 +13,7 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import Purchases from "react-native-purchases";
+// import Purchases from "react-native-purchases";
 
 const ANIMATION_DURATION = 500;
 const ANIMATION_DELAY = 100;
@@ -55,54 +55,54 @@ export default function Profile({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
 
-  useEffect(() => {
-    fetchSubscriptionInfo();
-  }, []);
+  // useEffect(() => {
+  //   fetchSubscriptionInfo();
+  // }, []);
 
-  // Fetch subscription details from RevenueCat
-  const fetchSubscriptionInfo = async () => {
-    try {
-      const customerInfo = await Purchases.getCustomerInfo();
-      setSubscriptionInfo({
-        status:
-          customerInfo.activeSubscriptions.length > 0 ? "Active" : "Inactive",
-        plan: customerInfo.activeSubscriptions[0] || "No active plan",
-        renewalDate: customerInfo.latestExpirationDate
-          ? new Date(customerInfo.latestExpirationDate).toLocaleDateString()
-          : "N/A",
-      });
-    } catch (error) {
-      Alert.alert("Error", "Failed to fetch subscription information");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // // Fetch subscription details from RevenueCat
+  // const fetchSubscriptionInfo = async () => {
+  //   try {
+  //     const customerInfo = await Purchases.getCustomerInfo();
+  //     setSubscriptionInfo({
+  //       status:
+  //         customerInfo.activeSubscriptions.length > 0 ? "Active" : "Inactive",
+  //       plan: customerInfo.activeSubscriptions[0] || "No active plan",
+  //       renewalDate: customerInfo.latestExpirationDate
+  //         ? new Date(customerInfo.latestExpirationDate).toLocaleDateString()
+  //         : "N/A",
+  //     });
+  //   } catch (error) {
+  //     Alert.alert("Error", "Failed to fetch subscription information");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  // Restore Purchases logic
-  const handleRestorePurchases = async () => {
-    try {
-      setLoading(true);
-      const customerInfo = await Purchases.restorePurchases();
+  // // Restore Purchases logic
+  // const handleRestorePurchases = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const customerInfo = await Purchases.restorePurchases();
 
-      if (
-        customerInfo.activeSubscriptions &&
-        customerInfo.activeSubscriptions.length > 0
-      ) {
-        // Navigate or unlock premium features
-        navigation.navigate("AccessGranted");
-        Alert.alert("Success", "Your purchases have been restored!");
-      } else {
-        Alert.alert(
-          "No Purchases Found",
-          "No active subscriptions were found to restore."
-        );
-      }
-    } catch (error) {
-      Alert.alert("Error", "Failed to restore purchases. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (
+  //       customerInfo.activeSubscriptions &&
+  //       customerInfo.activeSubscriptions.length > 0
+  //     ) {
+  //       // Navigate or unlock premium features
+  //       navigation.navigate("AccessGranted");
+  //       Alert.alert("Success", "Your purchases have been restored!");
+  //     } else {
+  //       Alert.alert(
+  //         "No Purchases Found",
+  //         "No active subscriptions were found to restore."
+  //       );
+  //     }
+  //   } catch (error) {
+  //     Alert.alert("Error", "Failed to restore purchases. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // Open OS-specific subscription settings
   const openSubscriptionSettings = async () => {
