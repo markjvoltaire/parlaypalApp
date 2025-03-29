@@ -112,7 +112,7 @@ const SplashScreen = ({ onFinish }) => {
   );
 };
 
-export default function Home({ navigation }) {
+export default function AccessGranted({ navigation }) {
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   // Unified state for all parlay data

@@ -138,7 +138,7 @@ export default function Home({ navigation }) {
     const checkSubscriptionStatus = async () => {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info:", customerInfo.entitlements);
+        console.log("Customer Info!:", customerInfo.originalAppUserId);
 
         // Check for active subscriptions
         if (
@@ -237,8 +237,6 @@ export default function Home({ navigation }) {
       return;
     }
 
-    console.log("API_URL :>> ", API_URL);
-
     // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
       navigation.navigate("Showcase");
@@ -251,7 +249,8 @@ export default function Home({ navigation }) {
       const formData = new FormData();
       const uriParts = image.split(".");
       const fileType = uriParts[uriParts.length - 1];
-      const customerInfo = await Purchases.getCustomerInfo();
+      const customerInfo = (await Purchases.getCustomerInfo())
+        .originalAppUserId;
 
       formData.append("image", {
         uri: image,
