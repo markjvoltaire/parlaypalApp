@@ -17,7 +17,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useState, useRef, useEffect } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
-import BetDetails from "../Components/BetDetails";
 import Purchases from "react-native-purchases";
 
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
@@ -117,7 +116,7 @@ export default function Home({ navigation }) {
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   // Unified state for all parlay data
-  const [bets, setBets] = useState(null);
+  const [analysisResponse, setAnalysisResponse] = useState(null);
 
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -139,7 +138,7 @@ export default function Home({ navigation }) {
     const checkSubscriptionStatus = async () => {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info!:", customerInfo.originalAppUserId);
+        console.log("Customer Info:", customerInfo.entitlements);
 
         // Check for active subscriptions
         if (
@@ -171,7 +170,7 @@ export default function Home({ navigation }) {
 
   // Trigger animation when analysisResponse updates
   useEffect(() => {
-    if (bets) {
+    if (analysisResponse) {
       fadeAnim.setValue(0);
       slideAnim.setValue(20);
       Animated.parallel([
@@ -187,7 +186,7 @@ export default function Home({ navigation }) {
         }),
       ]).start();
     }
-  }, [bets]);
+  }, [analysisResponse]);
 
   // Image picker
   const pickImage = async () => {
@@ -210,7 +209,7 @@ export default function Home({ navigation }) {
     if (!result.canceled) {
       setImage(result.assets[0].uri);
       // Reset analysis
-      setBets(null);
+      setAnalysisResponse(null);
     }
   };
 
@@ -250,8 +249,7 @@ export default function Home({ navigation }) {
       const formData = new FormData();
       const uriParts = image.split(".");
       const fileType = uriParts[uriParts.length - 1];
-      const customerInfo = (await Purchases.getCustomerInfo())
-        .originalAppUserId;
+      const customerInfo = await Purchases.getCustomerInfo();
 
       formData.append("image", {
         uri: image,
@@ -259,9 +257,9 @@ export default function Home({ navigation }) {
         type: `image/${fileType}`,
       });
 
-      // formData.append("userId", customerInfo);
+      formData.append("userId", customerInfo);
 
-      const response = await fetch(`${API_URL}/analyze-perplexity`, {
+      const response = await fetch(`${API_URL}/analyze`, {
         method: "POST",
         body: formData,
       });
@@ -269,19 +267,59 @@ export default function Home({ navigation }) {
       const responseData = await response.json();
 
       if (response.ok) {
-        // Create a merged data object that matches the expected structure
+        // Instead of storing slipInfo and advancedAnalysis separately,
+        // let's merge them into one final object for the UI.
+        let mergedData = {};
+
+        // If slipInfo exists, parse or store it:
+        if (responseData.slipInfo) {
+          if (
+            typeof responseData.slipInfo === "string" &&
+            responseData.slipInfo.trim().startsWith("{")
+          ) {
+            try {
+              mergedData = JSON.parse(responseData.slipInfo);
+            } catch (error) {
+              console.error("JSON parsing error for slipInfo:", error);
+              mergedData = {
+                rawData: responseData.slipInfo,
+                _note: "Could not parse JSON data",
+              };
+            }
+          } else if (typeof responseData.slipInfo === "object") {
+            mergedData = responseData.slipInfo;
+          }
+        }
+
+        // Process advancedAnalysis
+        let parsedAnalysis = responseData.advancedAnalysis;
+        if (typeof parsedAnalysis === "string") {
+          const cleanedString = stripMarkdownCodeFence(parsedAnalysis);
+          try {
+            parsedAnalysis = JSON.parse(cleanedString);
+          } catch (error) {
+            console.error("Error parsing advancedAnalysis:", error);
+            parsedAnalysis = {};
+          }
+        } else if (typeof parsedAnalysis !== "object") {
+          parsedAnalysis = {};
+        }
+
+        // Merge slipInfo and advancedAnalysis together
+        mergedData = { ...mergedData, ...parsedAnalysis };
+
+        // Now we have one unified object
+        setAnalysisResponse(mergedData);
 
         // Scroll to top
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-
-        setBets(responseData);
       } else {
         Alert.alert(
           "Analysis Failed",
           "Unable to process this bet slip. Please try a clearer image."
         );
         console.error("Upload failed", responseData);
-        setBets(null);
+        setAnalysisResponse(null);
       }
     } catch (error) {
       Alert.alert(
@@ -289,7 +327,7 @@ export default function Home({ navigation }) {
         "Please check your internet connection and try again."
       );
       console.error("Upload error:", error);
-      setBets(null);
+      setAnalysisResponse(null);
     } finally {
       setUploading(false);
     }
@@ -298,42 +336,89 @@ export default function Home({ navigation }) {
   // Clear everything
   const resetAnalysis = () => {
     setImage(null);
-    setBets(null);
+    setAnalysisResponse(null);
+  };
+
+  // Probability bar for entire parlay
+  const renderProbabilityIndicator = (probability) => {
+    if (probability === undefined || probability === null) return null;
+
+    let color = "#FF4D4F"; // Red
+    let message = "High Risk";
+
+    if (probability > 30) {
+      color = "#FAAD14"; // Orange
+      message = "Medium Risk";
+    }
+    if (probability > 60) {
+      color = "#52C41A"; // Green
+      message = "Lower Risk";
+    }
+
+    return (
+      <View style={styles.probabilityIndicator}>
+        <View style={[styles.indicatorBar, { backgroundColor: "#2A3350" }]}>
+          <View
+            style={[
+              styles.indicatorFill,
+              {
+                width: `${Math.min(probability, 100)}%`,
+                backgroundColor: color,
+              },
+            ]}
+          />
+        </View>
+        <View style={styles.indicatorLabels}>
+          <Text style={styles.indicatorValue}>{probability.toFixed(2)}%</Text>
+          <Text style={[styles.indicatorText, { color }]}>{message}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  // Probability bar for individual bets
+  const renderBetProbability = (probability) => {
+    if (probability === undefined || probability === null) return null;
+
+    let color = "#FF4D4F";
+    if (probability > 30) color = "#FAAD14";
+    if (probability > 60) color = "#52C41A";
+
+    return (
+      <View style={styles.betProbabilityContainer}>
+        <View
+          style={[styles.betProbabilityBar, { backgroundColor: "#2A3350" }]}
+        >
+          <View
+            style={[
+              styles.betProbabilityFill,
+              {
+                width: `${Math.min(probability, 100)}%`,
+                backgroundColor: color,
+              },
+            ]}
+          />
+        </View>
+        <Text style={[styles.betProbabilityValue, { color }]}>
+          {probability.toFixed(1)}%
+        </Text>
+      </View>
+    );
   };
 
   // Render the unified parlay analysis
   const renderParlayAnalysis = () => {
-    if (!bets) return null;
+    if (!analysisResponse) return null;
 
-    // Check if we have the new response format with "analysis" field
-    if (bets) {
-      return (
-        <Animated.View
-          style={[
-            styles.slipInfoWrapper,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.slipInfoHeader}>
-            <Text style={styles.slipInfoTitle}>Bet Analysis</Text>
-            <TouchableOpacity
-              style={styles.newAnalysisButton}
-              onPress={resetAnalysis}
-            >
-              <Text style={styles.newAnalysisText}>New Analysis</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Analysis Content */}
-
-          <BetDetails key={bets.id} bets={bets} />
-        </Animated.View>
-      );
-    }
+    // Destructure fields from analysisResponse
+    const {
+      stake,
+      parlay_odds,
+      parlay_probability,
+      parlay_summary,
+      leagues,
+      responsible_betting_reminder,
+    } = analysisResponse;
 
     return (
       <Animated.View
@@ -357,11 +442,151 @@ export default function Home({ navigation }) {
         </View>
 
         {/* Summary Card with stake, odds, probability */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Parlay Odds</Text>
+              <Text style={styles.summaryValue}>
+                {parlay_odds ? `+${parlay_odds}` : "N/A"}
+              </Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Stake</Text>
+              <Text style={styles.summaryValue}>
+                {stake ? `$${stake}` : "N/A"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.probabilitySection}>
+            <Text style={styles.probabilityLabel}>Win Probability</Text>
+            {renderProbabilityIndicator(parlay_probability)}
+          </View>
+        </View>
+
+        {/* AI Insight Card */}
+        <View style={styles.insightCard}>
+          <View style={styles.insightHeader}>
+            <MaterialCommunityIcons name="robot" size={20} color="#7789FF" />
+            <Text style={styles.insightTitle}>AI Insight</Text>
+          </View>
+
+          {/* Show parlay_summary if available */}
+          {parlay_summary?.expected_outcome && (
+            <Text style={styles.insightText}>
+              {parlay_summary.expected_outcome}
+            </Text>
+          )}
+          {parlay_summary?.risk_assessment && (
+            <Text style={styles.insightText}>
+              {parlay_summary.risk_assessment}
+            </Text>
+          )}
+          {parlay_summary?.alternative_suggestions?.map((item, idx) => (
+            <Text style={styles.insightText} key={`alt-${idx}`}>
+              - {item}
+            </Text>
+          ))}
+        </View>
 
         {/* Bet Details (Leagues, Bets) */}
         <Text style={styles.sectionTitle}>Bet Details</Text>
+        {leagues &&
+          leagues.map((league, idx) => (
+            <View key={`league-${idx}`} style={styles.leagueContainer}>
+              <View style={styles.leagueHeader}>
+                <MaterialCommunityIcons
+                  name={
+                    league.league?.toLowerCase().includes("nba")
+                      ? "basketball"
+                      : league.league?.toLowerCase().includes("nfl")
+                      ? "football"
+                      : league.league?.toLowerCase().includes("mlb")
+                      ? "baseball"
+                      : "trophy"
+                  }
+                  size={18}
+                  color="#7789FF"
+                />
+                <Text style={styles.leagueTitle}>{league.league}</Text>
+              </View>
+
+              {league.parlay_bets &&
+                league.parlay_bets.map((bet, betIdx) => (
+                  <View key={`bet-${betIdx}`} style={styles.betContainer}>
+                    {/* Bet Header: detail & odds */}
+                    <View style={styles.betHeader}>
+                      <Text style={styles.betDetail}>
+                        {bet.detail || "N/A"}
+                      </Text>
+                      <View style={styles.oddsTag}>
+                        <Text style={styles.oddsText}>
+                          {bet.odds && bet.odds > 0 ? `+${bet.odds}` : bet.odds}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Bet Info Row (Teams, etc.) */}
+                    {bet.teams && (
+                      <View style={styles.betInfoRow}>
+                        <Text style={styles.betInfoKey}>Teams:</Text>
+                        <Text style={styles.betInfoValue}>
+                          {bet.teams.join(" vs ")}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Probability bar for this bet */}
+                    {bet.probability !== undefined &&
+                      renderBetProbability(bet.probability)}
+
+                    {/* NEW: Analysis section below probability */}
+                    {bet.analysis && (
+                      <View style={styles.betAnalysisContainer}>
+                        <Text style={styles.analysisHeader}>Analysis</Text>
+
+                        {/* Key Stat */}
+                        <Text style={styles.analysisText}>
+                          <Text style={styles.label}>Key Stat: </Text>
+                          {bet.analysis.key_stat}
+                        </Text>
+
+                        {/* Matchup Consideration */}
+                        <Text style={styles.analysisText}>
+                          <Text style={styles.label}>Matchup: </Text>
+                          {bet.analysis.matchup_consideration}
+                        </Text>
+
+                        {/* Confidence Level */}
+                        <Text style={styles.analysisText}>
+                          <Text style={styles.label}>Confidence: </Text>
+                          {bet.analysis.confidence_level}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Footer (Bet Type, etc.) */}
+                    <View style={styles.betFooter}>
+                      <View style={styles.betTypeTag}>
+                        <Text style={styles.betTypeText}>
+                          {bet.bet_type || "N/A"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+            </View>
+          ))}
 
         {/* Responsible Betting Reminder */}
+        {responsible_betting_reminder && (
+          <View style={styles.disclaimer}>
+            <Text style={styles.disclaimerText}>
+              {responsible_betting_reminder}
+            </Text>
+          </View>
+        )}
       </Animated.View>
     );
   };
@@ -443,7 +668,7 @@ export default function Home({ navigation }) {
                 </View>
 
                 {/* Only show "Analyze" if we haven't gotten analysisResponse yet */}
-                {!bets && (
+                {!analysisResponse && (
                   <TouchableOpacity
                     style={[
                       styles.analyzeButton,
@@ -962,13 +1187,5 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: "600",
     color: "#ffffff",
-  },
-  analysisContent: {
-    padding: 16,
-  },
-  mainAnalysisText: {
-    color: "#ffffff",
-    fontSize: 16,
-    lineHeight: 24,
   },
 });

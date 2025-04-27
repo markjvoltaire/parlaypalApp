@@ -237,8 +237,6 @@ export default function AccessGranted({ navigation }) {
       return;
     }
 
-    console.log("API_URL :>> ", API_URL);
-
     // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
       navigation.navigate("Showcase");

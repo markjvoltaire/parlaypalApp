@@ -10,6 +10,9 @@ import Purchases from "react-native-purchases";
 import Welcome from "../Screens/Welcome";
 import Features from "../Screens/Features";
 import AccessGranted from "../Screens/AccessGranted";
+import Ask from "../Screens/Ask";
+import How from "../Screens/How";
+import Offer from "../Screens/Offer";
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
@@ -96,6 +99,28 @@ export default function Auth() {
       />
 
       <Stack.Screen
+        name="Ask"
+        component={Ask}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerTransparent: true,
+        })}
+      />
+
+      <Stack.Screen
+        name="How"
+        component={How}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerTransparent: true,
+        })}
+      />
+
+      <Stack.Screen
         name="AccessGranted"
         component={AccessGranted}
         options={({ route }) => ({
@@ -111,6 +136,18 @@ export default function Auth() {
       <Stack.Screen
         name="Welcome"
         component={Welcome}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          title: "Chat",
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerTransparent: true,
+        })}
+      />
+
+      <Stack.Screen
+        name="Offer"
+        component={Offer}
         options={({ route }) => ({
           tabBarVisible: false,
           title: "Chat",

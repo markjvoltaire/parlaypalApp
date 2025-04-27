@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Purchases from "react-native-purchases";
+import LottieView from "lottie-react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -133,36 +134,18 @@ export default function Welcome({ navigation }) {
       <Animated.View style={{ flex: 1, opacity: fadeIn }}>
         <StatusBar barStyle="light-content" />
         <SafeAreaView style={styles.safeArea}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.cardContainer}
-          >
-            <View style={styles.card}>
-              <Image
-                style={{ width: width * 0.65, height: width }}
-                source={require("../assets/uploadSlip.png")}
-              />
-            </View>
-            <View style={[styles.card, styles.activeCard]}>
-              <Image
-                style={{ width: width * 0.65, height: width }}
-                source={require("../assets/instantAnalysis.png")}
-              />
-            </View>
-            <View style={styles.card}>
-              <Image
-                style={{ width: width * 0.65, height: width }}
-                source={require("../assets/nailBets.png")}
-              />
-            </View>
-          </ScrollView>
+          <LottieView
+            source={require("../assets/scanning.json")}
+            autoPlay
+            loop
+            style={styles.lottie}
+          />
 
           <View style={styles.ctaSection}>
             <View style={styles.headerRow}>
               <Image
                 source={require("../assets/Activity.png")}
-                style={{ width: 30, height: 30, marginRight: 15 }}
+                style={{ width: 35, height: 35, marginRight: 10 }}
               />
               <Text style={styles.appTitle}>Parlay Pal</Text>
             </View>
@@ -176,7 +159,7 @@ export default function Welcome({ navigation }) {
 
             {/* 'Get Started' Button */}
             <TouchableOpacity
-              onPress={() => navigation.navigate("Home")}
+              onPress={() => navigation.navigate("Ask")}
               style={styles.button}
             >
               <Text style={styles.buttonText}>Get Started</Text>
@@ -252,6 +235,11 @@ const styles = StyleSheet.create({
   cardContainer: {
     paddingHorizontal: 5,
   },
+  lottie: {
+    width: 400,
+    height: 400,
+    alignSelf: "center",
+  },
   card: {
     width: width * 0.65,
     height: width,
@@ -266,7 +254,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.2)",
   },
   ctaSection: {
-    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingBottom: 30,
@@ -275,9 +262,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+    bottom: 20,
   },
   appTitle: {
-    fontSize: 22,
+    fontSize: 32,
     fontWeight: "bold",
     color: "#ffffff",
   },
