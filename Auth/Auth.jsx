@@ -13,6 +13,7 @@ import AccessGranted from "../Screens/AccessGranted";
 import Ask from "../Screens/Ask";
 import How from "../Screens/How";
 import Offer from "../Screens/Offer";
+import { supabase } from "../Services/supabase";
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
@@ -20,6 +21,23 @@ export default function Auth() {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const isFetchingRef = useRef(false); // flag to prevent concurrent requests
+  const [hasOnboarded, setHasOnboarded] = useState(false);
+  const [initialScreen, setInitialScreen] = useState(null);
+
+  const hasCompletedOnboarding = async (userId) => {
+    const { data, error } = await supabase
+      .from("survey") // or "surveys" if your actual table name differs
+      .select("id")
+      .eq("userId", userId)
+      .limit(1);
+
+    if (error) {
+      console.error("Error checking onboarding status:", error);
+      return false; // fallback: treat as not completed
+    }
+
+    return data.length > 0;
+  };
 
   // Fetch products and subscription status from RevenueCat when component mounts
   useEffect(() => {
@@ -33,6 +51,28 @@ export default function Auth() {
         setIsLoading(true); // start loading
         const customerInfo = await Purchases.getCustomerInfo();
         console.log("Customer Info!:", customerInfo);
+        const userId = customerInfo.originalAppUserId;
+        console.log("userId :>> ", userId);
+
+        const completedOnboarding = await hasCompletedOnboarding(userId);
+        setHasOnboarded(completedOnboarding);
+        console.log("completedOnboarding :>> ", completedOnboarding);
+
+        // Check for subscription
+        const isSubscribedUser =
+          customerInfo.activeSubscriptions &&
+          customerInfo.activeSubscriptions.length > 0;
+
+        setIsSubscribed(isSubscribedUser);
+
+        // Determine initial screen
+        if (isSubscribedUser) {
+          setInitialScreen("Home");
+        } else if (!completedOnboarding) {
+          setInitialScreen("Welcome");
+        } else {
+          setInitialScreen("Home");
+        }
 
         // Check for active subscriptions
         if (
@@ -72,7 +112,7 @@ export default function Auth() {
   }, []);
 
   // Show a loading indicator while subscription status is being checked
-  if (isLoading) {
+  if (isLoading || initialScreen === null) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="white" />
@@ -83,7 +123,7 @@ export default function Auth() {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={isSubscribed ? "Home" : "Welcome"}
+      initialRouteName={initialScreen}
     >
       <Stack.Screen
         name="Home"

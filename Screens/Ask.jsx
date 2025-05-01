@@ -11,6 +11,7 @@ import {
 import React, { useState, useRef, useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../Services/supabase";
+import Purchases from "react-native-purchases";
 
 // Mock icon components - in a real app, you'd import from a library like @expo/vector-icons
 const ChevronRight = () => (
@@ -93,7 +94,9 @@ export default function Ask({ navigation }) {
     };
   }, [step]);
 
-  const handleAnswerPress = (answer, answerIndex) => {
+  const handleAnswerPress = async (answer, answerIndex) => {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const userId = customerInfo.originalAppUserId;
     setSelectedAnswer(answerIndex);
 
     // wait for the tap animation
@@ -122,6 +125,7 @@ export default function Ask({ navigation }) {
               betType: updatedAnswers.question1,
               researchTime: updatedAnswers.question2,
               foundBy: updatedAnswers.question3,
+              userId: userId,
             },
           ]);
           if (error) {
@@ -225,10 +229,6 @@ export default function Ask({ navigation }) {
             </View>
           </Animated.View>
         </View>
-
-        <TouchableOpacity style={styles.skipContainer} onPress={handleSkip}>
-          <Text style={styles.skip}>Skip this step</Text>
-        </TouchableOpacity>
       </LinearGradient>
     </SafeAreaView>
   );

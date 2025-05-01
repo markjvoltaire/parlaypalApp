@@ -87,9 +87,7 @@ export default function How({ navigation }) {
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.button}
-          onPress={
-            isLastSlide ? () => navigation.navigate("Offer") : handleNext
-          }
+          onPress={isLastSlide ? () => navigation.navigate("Home") : handleNext}
         >
           <Text style={styles.buttonText}>
             {isLastSlide ? "Continue" : "Next"}

@@ -20,6 +20,7 @@ export default function Offer({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [processingPurchase, setProcessingPurchase] = useState(false);
   const [processingRestore, setProcessingRestore] = useState(false);
+  const [hasUsedFreeTrial, setHasUsedFreeTrial] = useState(false);
 
   const handlePurchase = async (packageToPurchase) => {
     try {
@@ -95,12 +96,17 @@ export default function Offer({ navigation }) {
         const customerInfo = await Purchases.getCustomerInfo();
         console.log("Customer Info:", customerInfo);
 
+        if (customerInfo.originalPurchaseDate !== null) {
+          setHasUsedFreeTrial(true);
+        } else {
+          setHasUsedFreeTrial(false);
+        }
+
         // Check for active subscriptions
         if (
           customerInfo.activeSubscriptions &&
           customerInfo.activeSubscriptions.length > 0
         ) {
-          console.log("User is currently subscribed.");
           setIsSubscribed(true);
         } else {
           console.log("User is not subscribed.");
@@ -161,6 +167,10 @@ export default function Offer({ navigation }) {
           <Text style={styles.benefitsTitle}>What You'll Get:</Text>
           <View style={styles.benefitItem}>
             <Text style={styles.bulletPoint}>•</Text>
+            <Text style={styles.benefitsText}>Unlimited uploads</Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.bulletPoint}>•</Text>
             <Text style={styles.benefitsText}>
               Lightning-fast insights on your bet slips
             </Text>
@@ -170,10 +180,6 @@ export default function Offer({ navigation }) {
             <Text style={styles.benefitsText}>
               Detailed odds analysis and risk assessments
             </Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.benefitsText}>Unlimited uploads</Text>
           </View>
         </View>
 
@@ -206,7 +212,9 @@ export default function Offer({ navigation }) {
               </Text>
             </View>
           ) : (
-            <Text style={styles.buttonText}>Start Free Trial</Text>
+            <Text style={styles.buttonText}>
+              {hasUsedFreeTrial ? "Join Parlay Pal" : "Start Free Trial"}
+            </Text>
           )}
         </TouchableOpacity>
 
@@ -358,6 +366,7 @@ const styles = StyleSheet.create({
   },
   otherPlansButton: {
     padding: 10,
+    bottom: 20,
   },
   otherPlansText: {
     color: "#0A84FF",
