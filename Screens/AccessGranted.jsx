@@ -18,6 +18,7 @@ import { useState, useRef, useEffect } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import Purchases from "react-native-purchases";
+import { supabase } from "../Services/supabase";
 
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
 Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
@@ -138,6 +139,7 @@ export default function AccessGranted({ navigation }) {
     const checkSubscriptionStatus = async () => {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
+        const userId = customerInfo.originalAppUserId;
         console.log("Customer Info:", customerInfo.entitlements);
 
         // Check for active subscriptions
@@ -230,8 +232,31 @@ export default function AccessGranted({ navigation }) {
     return cleaned.trim();
   }
 
+  const getUploadCount = async (userId) => {
+    const { data, error, count } = await supabase
+      .from("slips")
+      .select("*", { count: "exact", head: true })
+      .eq("userId", userId)
+      .gte(
+        "created_at",
+        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      );
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return Infinity;
+    }
+
+    return count;
+  };
+
   // Upload image & parse final JSON
   const uploadImage = async () => {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const userId = customerInfo.originalAppUserId;
+
+    console.log("userId!  :>> ", userId);
+
     if (!image) {
       Alert.alert("Please select an image first");
       return;
@@ -239,8 +264,16 @@ export default function AccessGranted({ navigation }) {
 
     // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
-      navigation.navigate("Showcase");
-      return;
+      const uploadsToday = await getUploadCount(userId);
+      if (uploadsToday >= 3) {
+        Alert.alert(
+          "Upload Limit Reached",
+          "Free users can upload up to 3 bet slips per day. Upgrade to Pro for unlimited access."
+        );
+        navigation.navigate("Offer");
+        return;
+      }
+      console.log("uploadsToday :>> ", uploadsToday);
     }
 
     setUploading(true);
@@ -257,7 +290,7 @@ export default function AccessGranted({ navigation }) {
         type: `image/${fileType}`,
       });
 
-      formData.append("userId", customerInfo);
+      formData.append("userId", userId);
 
       const response = await fetch(`${API_URL}/analyze`, {
         method: "POST",
