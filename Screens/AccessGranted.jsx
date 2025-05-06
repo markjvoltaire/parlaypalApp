@@ -232,30 +232,10 @@ export default function AccessGranted({ navigation }) {
     return cleaned.trim();
   }
 
-  const getUploadCount = async (userId) => {
-    const { data, error, count } = await supabase
-      .from("slips")
-      .select("*", { count: "exact", head: true })
-      .eq("userId", userId)
-      .gte(
-        "created_at",
-        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      );
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return Infinity;
-    }
-
-    return count;
-  };
-
   // Upload image & parse final JSON
   const uploadImage = async () => {
     const customerInfo = await Purchases.getCustomerInfo();
     const userId = customerInfo.originalAppUserId;
-
-    console.log("userId!  :>> ", userId);
 
     if (!image) {
       Alert.alert("Please select an image first");
@@ -264,16 +244,8 @@ export default function AccessGranted({ navigation }) {
 
     // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
-      const uploadsToday = await getUploadCount(userId);
-      if (uploadsToday >= 3) {
-        Alert.alert(
-          "Upload Limit Reached",
-          "Free users can upload up to 3 bet slips per day. Upgrade to Pro for unlimited access."
-        );
-        navigation.navigate("Offer");
-        return;
-      }
-      console.log("uploadsToday :>> ", uploadsToday);
+      navigation.navigate("Offer");
+      return;
     }
 
     setUploading(true);
@@ -282,7 +254,6 @@ export default function AccessGranted({ navigation }) {
       const formData = new FormData();
       const uriParts = image.split(".");
       const fileType = uriParts[uriParts.length - 1];
-      const customerInfo = await Purchases.getCustomerInfo();
 
       formData.append("image", {
         uri: image,
