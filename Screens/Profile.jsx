@@ -231,7 +231,7 @@ export default function Profile({ navigation }) {
                 {/* Manage Subscription Row */}
                 <TouchableOpacity
                   style={styles.row}
-                  onPress={openSubscriptionSettings}
+                  onPress={() => navigation.navigate("ExitSurvey")}
                 >
                   <View style={styles.rowIconContainer}>
                     <Ionicons name="card-outline" size={20} color="#7789FF" />

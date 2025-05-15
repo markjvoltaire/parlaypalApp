@@ -10,9 +10,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Purchases from "react-native-purchases";
+import { REVENUECAT_API_KEY } from "@env";
 
 // Configure RevenueCat (update your public API key as needed)
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+Purchases.configure({ apiKey: REVENUECAT_API_KEY });
 
 export default function Offer({ navigation }) {
   const [products, setProducts] = useState([]);
@@ -186,10 +187,10 @@ export default function Offer({ navigation }) {
         <View style={styles.offerContainer}>
           {/* Billed amount is the most prominent element */}
           <Text style={styles.billingInfo}>
-            After a 3-day free trial, your subscription will renew
+            After a 7-day free trial, your subscription will renew
             automatically.
           </Text>
-          <Text style={styles.billedPrice}>$4.99/week</Text>
+          <Text style={styles.billedPrice}>$19.99/month</Text>
         </View>
 
         {/* Call-to-Action: Purchase */}

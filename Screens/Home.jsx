@@ -21,8 +21,6 @@ import Purchases from "react-native-purchases";
 import { supabase } from "../Services/supabase";
 import { REVENUECAT_API_KEY } from "@env";
 
-console.log("REVENUECAT_API_KEY :>> ", REVENUECAT_API_KEY);
-
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
 Purchases.configure({ apiKey: REVENUECAT_API_KEY });
 

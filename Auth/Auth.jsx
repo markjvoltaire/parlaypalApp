@@ -1,118 +1,104 @@
-import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
+// src/Navigation/Auth.js
+
+import { StyleSheet, View, ActivityIndicator } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import Purchases from "react-native-purchases";
+import { supabase } from "../Services/supabase";
+
+// Screens
 import Home from "../Screens/Home";
 import Profile from "../Screens/Profile";
 import Help from "../Screens/Help";
 import Privacy from "../Screens/Privacy";
 import Terms from "../Screens/Terms";
-import Purchases from "react-native-purchases";
 import Welcome from "../Screens/Welcome";
 import Features from "../Screens/Features";
 import AccessGranted from "../Screens/AccessGranted";
 import Ask from "../Screens/Ask";
 import How from "../Screens/How";
 import Offer from "../Screens/Offer";
-import { supabase } from "../Services/supabase";
+import ExitSurvey from "../Screens/ExitSurvey";
+import { REVENUECAT_API_KEY } from "@env";
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const isFetchingRef = useRef(false); // flag to prevent concurrent requests
-  const [hasOnboarded, setHasOnboarded] = useState(false);
-  const [initialScreen, setInitialScreen] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialScreen, setInitialScreen] = useState("Welcome"); // fallback
+  const sdkInitialized = useRef(false);
 
-  const hasCompletedOnboarding = async (userId) => {
-    const { data, error } = await supabase
-      .from("survey") // or "surveys" if your actual table name differs
-      .select("id")
-      .eq("userId", userId)
-      .limit(1);
-
-    if (error) {
-      console.error("Error checking onboarding status:", error);
-      return false; // fallback: treat as not completed
-    }
-
-    return data.length > 0;
-  };
-
-  // Fetch products and subscription status from RevenueCat when component mounts
+  // 1) Initialize RevenueCat SDK once
   useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      if (isFetchingRef.current) {
-        // Already fetching, so skip this call
-        return;
-      }
-      isFetchingRef.current = true;
+    async function setupSDK() {
+      if (sdkInitialized.current) return;
+      sdkInitialized.current = true;
       try {
-        setIsLoading(true); // start loading
-        const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info!:", customerInfo);
-        const userId = customerInfo.originalAppUserId;
-        console.log("userId :>> ", userId);
+        console.log("→ Purchases.configure");
+        await Purchases.configure({
+          apiKey: REVENUECAT_API_KEY,
+          // optionally: appUserID, observerMode, userDefaultsSuiteName
+        });
+        console.log("← Purchases.configure complete");
+      } catch (e) {
+        console.error("RevenueCat configure failed:", e);
+      }
+    }
+    setupSDK();
+  }, []);
 
-        const completedOnboarding = await hasCompletedOnboarding(userId);
-        setHasOnboarded(completedOnboarding);
-        console.log("completedOnboarding :>> ", completedOnboarding);
+  // 2) Once SDK is initialized, fetch customer info and offerings
+  useEffect(() => {
+    let cancelled = false;
 
-        // Check for subscription
-        const isSubscribedUser =
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0;
+    async function bootstrap() {
+      try {
+        console.log("→ Purchases.getCustomerInfo");
+        const info = await Purchases.getCustomerInfo();
+        console.log("← got customerInfo", info);
 
-        setIsSubscribed(isSubscribedUser);
+        // check onboarding status in Supabase
+        const userId = info.originalAppUserId;
+        const { data, error } = await supabase
+          .from("survey")
+          .select("id")
+          .eq("userId", userId)
+          .limit(1);
 
-        // Determine initial screen
-        if (isSubscribedUser) {
+        const hasOnboarded = !error && data.length > 0;
+        const isSubscribed = (info.activeSubscriptions || []).length > 0;
+
+        // decide initial screen
+        if (isSubscribed) {
           setInitialScreen("Home");
-        } else if (!completedOnboarding) {
+        } else if (!hasOnboarded) {
           setInitialScreen("Welcome");
         } else {
           setInitialScreen("Home");
         }
 
-        // Check for active subscriptions
-        if (
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0
-        ) {
-          console.log("User is currently subscribed.");
-          setIsSubscribed(true);
-        } else {
-          console.log("User is not subscribed.");
-          setIsSubscribed(false);
-        }
-
-        // Fetch available products
+        console.log("→ Purchases.getOfferings");
         const offerings = await Purchases.getOfferings();
-        if (
-          offerings.current !== null &&
-          offerings.current.availablePackages.length > 0
-        ) {
-          setProducts(offerings.current.availablePackages);
-        }
-      } catch (error) {
-        if (error.message && error.message.includes("already in progress")) {
-          console.warn(
-            "Operation already in progress. Skipping duplicate call."
-          );
-        } else {
-          console.error("Error fetching customer info:", error);
-        }
+        console.log("← got offerings", offerings);
+        // you can store offerings.current.availablePackages here if needed
+      } catch (err) {
+        console.error("Bootstrap error:", err);
+        // fallback initialScreen remains
       } finally {
-        isFetchingRef.current = false;
-        setIsLoading(false); // end loading regardless of result
+        if (!cancelled) setIsLoading(false);
       }
-    };
+    }
 
-    checkSubscriptionStatus();
+    if (sdkInitialized.current) {
+      bootstrap();
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Show a loading indicator while subscription status is being checked
-  if (isLoading || initialScreen === null) {
+  // loading state
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="white" />
@@ -125,133 +111,18 @@ export default function Auth() {
       screenOptions={{ headerShown: false }}
       initialRouteName={initialScreen}
     >
-      <Stack.Screen
-        name="Home"
-        component={Home}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Chat",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
-          gestureEnabled: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="Ask"
-        component={Ask}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
-        })}
-      />
-
-      <Stack.Screen
-        name="How"
-        component={How}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
-        })}
-      />
-
-      <Stack.Screen
-        name="AccessGranted"
-        component={AccessGranted}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Chat",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
-          gestureEnabled: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="Welcome"
-        component={Welcome}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Chat",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
-        })}
-      />
-
-      <Stack.Screen
-        name="Offer"
-        component={Offer}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Chat",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
-        })}
-      />
-
-      <Stack.Screen
-        name="Showcase"
-        component={Features}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Chat",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-        })}
-      />
-
-      <Stack.Screen
-        name="Profile"
-        component={Profile}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Profile",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerShown: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="Help"
-        component={Help}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerShown: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="Privacy"
-        component={Privacy}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerShown: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="Terms"
-        component={Terms}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerShown: false,
-        })}
-      />
+      <Stack.Screen name="Home" component={Home} />
+      <Stack.Screen name="Ask" component={Ask} />
+      <Stack.Screen name="How" component={How} />
+      <Stack.Screen name="AccessGranted" component={AccessGranted} />
+      <Stack.Screen name="Welcome" component={Welcome} />
+      <Stack.Screen name="Offer" component={Offer} />
+      <Stack.Screen name="Showcase" component={Features} />
+      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="Help" component={Help} />
+      <Stack.Screen name="Privacy" component={Privacy} />
+      <Stack.Screen name="ExitSurvey" component={ExitSurvey} />
+      <Stack.Screen name="Terms" component={Terms} />
     </Stack.Navigator>
   );
 }
@@ -259,8 +130,8 @@ export default function Auth() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
+    backgroundColor: "#101426",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#101426",
   },
 });
