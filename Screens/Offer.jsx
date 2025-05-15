@@ -115,6 +115,7 @@ export default function Offer({ navigation }) {
 
         // // Fetch available products
         const offerings = await Purchases.getOfferings();
+        console.log("offerings :>> ", offerings);
         if (
           offerings.current !== null &&
           offerings.current.availablePackages.length > 0
@@ -186,10 +187,10 @@ export default function Offer({ navigation }) {
         <View style={styles.offerContainer}>
           {/* Billed amount is the most prominent element */}
           <Text style={styles.billingInfo}>
-            After a 3-day free trial, your subscription will renew
+            After a 7-day free trial, your subscription will renew
             automatically.
           </Text>
-          <Text style={styles.billedPrice}>$4.99/week</Text>
+          <Text style={styles.billedPrice}>$19.99/month</Text>
         </View>
 
         {/* Call-to-Action: Purchase */}

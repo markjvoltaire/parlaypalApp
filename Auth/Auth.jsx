@@ -14,6 +14,7 @@ import Ask from "../Screens/Ask";
 import How from "../Screens/How";
 import Offer from "../Screens/Offer";
 import { supabase } from "../Services/supabase";
+import ExitSurvey from "../Screens/ExitSurvey";
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
@@ -176,6 +177,18 @@ export default function Auth() {
       <Stack.Screen
         name="Welcome"
         component={Welcome}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          title: "Chat",
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerTransparent: true,
+        })}
+      />
+
+      <Stack.Screen
+        name="ExitSurvey"
+        component={ExitSurvey}
         options={({ route }) => ({
           tabBarVisible: false,
           title: "Chat",
