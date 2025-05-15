@@ -48,7 +48,7 @@ const ProgressDot = ({ active, completed }) => (
   />
 );
 
-export default function Ask({ navigation }) {
+export default function ExitSurvey({ navigation }) {
   const [step, setStep] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;

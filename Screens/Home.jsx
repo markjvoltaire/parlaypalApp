@@ -19,10 +19,9 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import Purchases from "react-native-purchases";
 import { supabase } from "../Services/supabase";
-import { REVENUECAT_API_KEY } from "@env";
 
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
-Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 
 const { width, height } = Dimensions.get("window");
 
