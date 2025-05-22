@@ -9,10 +9,10 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import Purchases from "react-native-purchases";
+// import Purchases from "react-native-purchases";
 
 // Configure RevenueCat (update your public API key as needed)
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+// Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 
 export default function Features({ navigation }) {
   const [products, setProducts] = useState([]);
@@ -21,32 +21,32 @@ export default function Features({ navigation }) {
   const [processingPurchase, setProcessingPurchase] = useState(false);
   const [processingRestore, setProcessingRestore] = useState(false);
 
-  const handlePurchase = async (packageToPurchase) => {
-    try {
-      setProcessingPurchase(true);
-      const { customerInfo } = await Purchases.purchasePackage(
-        packageToPurchase
-      );
-      // Check if the user is now subscribed
-      if (
-        customerInfo.activeSubscriptions &&
-        customerInfo.activeSubscriptions.length > 0
-      ) {
-        setIsSubscribed(true);
-        // Trigger the new subscription handler
-        handleNewSubscription();
-      }
-    } catch (error) {
-      if (!error.userCancelled) {
-        Alert.alert(
-          "Error",
-          "There was a problem with your purchase. Please try again."
-        );
-      }
-    } finally {
-      setProcessingPurchase(false);
-    }
-  };
+  // const handlePurchase = async (packageToPurchase) => {
+  //   try {
+  //     setProcessingPurchase(true);
+  //     const { customerInfo } = await Purchases.purchasePackage(
+  //       packageToPurchase
+  //     );
+  //     // Check if the user is now subscribed
+  //     if (
+  //       customerInfo.activeSubscriptions &&
+  //       customerInfo.activeSubscriptions.length > 0
+  //     ) {
+  //       setIsSubscribed(true);
+  //       // Trigger the new subscription handler
+  //       handleNewSubscription();
+  //     }
+  //   } catch (error) {
+  //     if (!error.userCancelled) {
+  //       Alert.alert(
+  //         "Error",
+  //         "There was a problem with your purchase. Please try again."
+  //       );
+  //     }
+  //   } finally {
+  //     setProcessingPurchase(false);
+  //   }
+  // };
 
   // Refactored function to handle new subscription success
   const handleNewSubscription = () => {
@@ -63,67 +63,67 @@ export default function Features({ navigation }) {
     );
   };
 
-  const handleRestorePurchases = async () => {
-    try {
-      setProcessingRestore(true);
-      const customerInfo = await Purchases.restorePurchases();
+  // const handleRestorePurchases = async () => {
+  //   try {
+  //     setProcessingRestore(true);
+  //     const customerInfo = await Purchases.restorePurchases();
 
-      if (
-        customerInfo.activeSubscriptions &&
-        customerInfo.activeSubscriptions.length > 0
-      ) {
-        navigation.navigate("AccessGranted");
-        Alert.alert("Success", "Your purchases have been restored!");
-      } else {
-        Alert.alert(
-          "No Purchases Found",
-          "No active subscriptions were found to restore."
-        );
-      }
-    } catch (error) {
-      Alert.alert("Error", "Failed to restore purchases. Please try again.");
-    } finally {
-      setProcessingRestore(false);
-    }
-  };
+  //     if (
+  //       customerInfo.activeSubscriptions &&
+  //       customerInfo.activeSubscriptions.length > 0
+  //     ) {
+  //       navigation.navigate("AccessGranted");
+  //       Alert.alert("Success", "Your purchases have been restored!");
+  //     } else {
+  //       Alert.alert(
+  //         "No Purchases Found",
+  //         "No active subscriptions were found to restore."
+  //       );
+  //     }
+  //   } catch (error) {
+  //     Alert.alert("Error", "Failed to restore purchases. Please try again.");
+  //   } finally {
+  //     setProcessingRestore(false);
+  //   }
+  // };
 
   // Fetch products from RevenueCat when component mounts
-  useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      try {
-        setLoading(true);
-        const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info:", customerInfo);
+  // useEffect(() => {
+  //   const checkSubscriptionStatus = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const customerInfo = await Purchases.getCustomerInfo();
+  //       console.log("Customer Info:", customerInfo);
 
-        // Check for active subscriptions
-        if (
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0
-        ) {
-          console.log("User is currently subscribed.");
-          setIsSubscribed(true);
-        } else {
-          console.log("User is not subscribed.");
-          setIsSubscribed(false);
-        }
+  //       // Check for active subscriptions
+  //       if (
+  //         customerInfo.activeSubscriptions &&
+  //         customerInfo.activeSubscriptions.length > 0
+  //       ) {
+  //         console.log("User is currently subscribed.");
+  //         setIsSubscribed(true);
+  //       } else {
+  //         console.log("User is not subscribed.");
+  //         setIsSubscribed(false);
+  //       }
 
-        // Fetch available products
-        const offerings = await Purchases.getOfferings();
-        if (
-          offerings.current !== null &&
-          offerings.current.availablePackages.length > 0
-        ) {
-          setProducts(offerings.current.availablePackages);
-        }
-      } catch (error) {
-        console.error("Error fetching customer info:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       // Fetch available products
+  //       const offerings = await Purchases.getOfferings();
+  //       if (
+  //         offerings.current !== null &&
+  //         offerings.current.availablePackages.length > 0
+  //       ) {
+  //         setProducts(offerings.current.availablePackages);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching customer info:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    checkSubscriptionStatus();
-  }, []);
+  //   checkSubscriptionStatus();
+  // }, []);
 
   if (loading) {
     return (

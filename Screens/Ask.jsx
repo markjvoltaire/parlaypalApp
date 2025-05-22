@@ -45,7 +45,7 @@ const ProgressDot = ({ active, completed }) => (
   />
 );
 
-export default function Ask({ navigation }) {
+export default function Ask({ navigation, route }) {
   const [step, setStep] = useState(0);
   const [responses, setResponses] = useState([]);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -53,6 +53,13 @@ export default function Ask({ navigation }) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const screenWidth = Dimensions.get("window").width;
   const [surveyAnswers, setSurveyAnswers] = useState({});
+
+  // Retrieve email and expoToken from navigation params
+  const email = route?.params?.email || null;
+  const expoToken = route?.params?.expoToken || null;
+
+  console.log("email", email);
+  console.log("expoToken!", expoToken);
 
   const questions = [
     "What type of bets do you usually place?",
@@ -126,6 +133,8 @@ export default function Ask({ navigation }) {
               researchTime: updatedAnswers.question2,
               foundBy: updatedAnswers.question3,
               userId: userId,
+              email: email,
+              expoToken: expoToken,
             },
           ]);
           if (error) {
@@ -139,7 +148,7 @@ export default function Ask({ navigation }) {
         }
       }
 
-      // 5) reset the “pressed” highlight
+      // 5) reset the "pressed" highlight
       setSelectedAnswer(null);
 
       // 6) if there are more questions, animate to the next one

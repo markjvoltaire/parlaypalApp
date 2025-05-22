@@ -14,7 +14,7 @@ import {
 import React, { useState, useRef, useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../Services/supabase";
-import Purchases from "react-native-purchases";
+// import Purchases from "react-native-purchases";
 
 // Mock icon components - in a real app, you'd import from a library like @expo/vector-icons
 const ChevronRight = () => (
@@ -128,8 +128,8 @@ export default function ExitSurvey({ navigation }) {
   }, [step]);
 
   const handleAnswerPress = async (answer, answerIndex) => {
-    const customerInfo = await Purchases.getCustomerInfo();
-    const userId = customerInfo.originalAppUserId;
+    // const customerInfo = await Purchases.getCustomerInfo();
+    // const userId = customerInfo.originalAppUserId;
     setSelectedAnswer(answerIndex);
 
     // wait for the tap animation

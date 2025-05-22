@@ -159,7 +159,7 @@ export default function Welcome({ navigation }) {
 
             {/* 'Get Started' Button */}
             <TouchableOpacity
-              onPress={() => navigation.navigate("Ask")}
+              onPress={() => navigation.navigate("Email")}
               style={styles.button}
             >
               <Text style={styles.buttonText}>Get Started</Text>

@@ -141,6 +141,7 @@ export default function Home({ navigation }) {
         const customerInfo = await Purchases.getCustomerInfo();
         const userId = customerInfo.originalAppUserId;
         console.log("Customer Info:", customerInfo.entitlements);
+        console.log("userId :>> ", userId);
 
         // Check for active subscriptions
         if (
@@ -244,6 +245,7 @@ export default function Home({ navigation }) {
 
     // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
+      console.log("first");
       navigation.navigate("Offer");
       return;
     }
