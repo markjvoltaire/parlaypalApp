@@ -140,8 +140,10 @@ export default function Home({ navigation }) {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
         const userId = customerInfo.originalAppUserId;
-        console.log("Customer Info:", customerInfo.entitlements);
         console.log("userId :>> ", userId);
+        // Log the full customerInfo for debugging
+        // Log the RevenueCat customerId
+        console.log("RevenueCat customerId:", userId);
 
         // Check for active subscriptions
         if (

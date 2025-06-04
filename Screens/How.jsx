@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import {
   StyleSheet,
   Text,
@@ -8,21 +14,23 @@ import {
   StatusBar,
   useWindowDimensions,
   Animated,
+  Image,
 } from "react-native";
+import { Video } from "expo-av";
 
 /* ──────────────────────────────────────────
  *  Constants
  * ────────────────────────────────────────── */
-const IMAGES = [
-  require("../assets/uploadSlip.png"),
-  require("../assets/instantAnalysis.png"),
-  require("../assets/nailBets.png"),
+const MEDIA = [
+  { type: "video", source: require("../assets/uploadSlip.mov") },
+  { type: "image", source: require("../assets/analysis.png") },
+  { type: "video", source: require("../assets/nailBets.mov") },
 ];
 
 const HEADERS = [
   "Upload Your slip",
-  "Real Time Data Analysis",
-  "Nail Your Bets",
+  "Real odds. Not vibes.",
+  "Analysis for every bet",
 ];
 
 const ANIMATION_DURATION = 300;
@@ -34,30 +42,49 @@ export default function How({ navigation }) {
   const { width } = useWindowDimensions();
   const CARD_WIDTH = width * 0.9;
 
-  /* ----- Cross-fade state ----- */
+  /* ----- Animation state ----- */
   const [index, setIndex] = useState(0);
-  const opacity = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const videoRef = useRef(null);
 
-  const animateOpacity = useCallback(
-    (toValue, onComplete) =>
-      Animated.timing(opacity, {
-        toValue,
+  const fadeIn = useCallback(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: ANIMATION_DURATION,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  const fadeOut = useCallback(() => {
+    return new Promise((resolve) => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
         duration: ANIMATION_DURATION,
         useNativeDriver: true,
-      }).start(onComplete),
-    [opacity]
-  );
-
-  const handleNext = useCallback(() => {
-    animateOpacity(0, () => {
-      setIndex((prev) => (prev + 1) % IMAGES.length);
-      opacity.setValue(0); // reset instantly
-      animateOpacity(1); // fade new image in
+      }).start(resolve);
     });
-  }, [animateOpacity, opacity]);
+  }, [fadeAnim]);
 
-  const isLastSlide = index === IMAGES.length - 1;
-  const currentImage = useMemo(() => IMAGES[index], [index]);
+  const handleNext = useCallback(async () => {
+    await fadeOut();
+    setIndex((prev) => (prev + 1) % MEDIA.length);
+    fadeIn();
+  }, [fadeOut, fadeIn]);
+
+  // Fade in on mount
+  useEffect(() => {
+    fadeIn();
+  }, []);
+
+  // Handle index changes
+  useEffect(() => {
+    if (index > 0) {
+      fadeIn();
+    }
+  }, [index, fadeIn]);
+
+  const isLastSlide = index === MEDIA.length - 1;
+  const currentMedia = useMemo(() => MEDIA[index], [index]);
   const headerTitle = HEADERS[index];
 
   /* ──────────────────────────── */
@@ -70,16 +97,27 @@ export default function How({ navigation }) {
         <Text style={styles.headerText}>{headerTitle}</Text>
       </View>
 
-      {/* Image */}
-      <View style={styles.imageWrapper}>
-        <Animated.Image
-          source={currentImage}
-          resizeMode="cover"
-          style={[
-            styles.image,
-            { width: CARD_WIDTH, height: width * 1.3, opacity },
-          ]}
-        />
+      {/* Media */}
+      <View style={styles.mediaWrapper}>
+        <Animated.View style={[styles.mediaContainer, { opacity: fadeAnim }]}>
+          {currentMedia.type === "video" ? (
+            <Video
+              ref={videoRef}
+              source={currentMedia.source}
+              style={[styles.media, { width: CARD_WIDTH, height: width * 1.3 }]}
+              resizeMode="cover"
+              isLooping
+              shouldPlay
+              useNativeControls={false}
+            />
+          ) : (
+            <Image
+              source={currentMedia.source}
+              style={[styles.media, { width: CARD_WIDTH, height: width * 1.3 }]}
+              resizeMode="cover"
+            />
+          )}
+        </Animated.View>
       </View>
 
       {/* CTA */}
@@ -120,12 +158,16 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
     top: 20,
   },
-  imageWrapper: {
+  mediaWrapper: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  image: {
+  mediaContainer: {
+    width: "100%",
+    alignItems: "center",
+  },
+  media: {
     borderRadius: 24,
     backgroundColor: "rgba(255,255,255,0.1)",
   },

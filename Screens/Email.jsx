@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#333",
+    bottom: 15,
   },
   error: {
     color: "#FF3B30",

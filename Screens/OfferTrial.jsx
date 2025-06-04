@@ -6,6 +6,7 @@ import {
   Image,
   SafeAreaView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import Purchases from "react-native-purchases";
@@ -27,7 +28,7 @@ const TimelineIcon = ({ type }) => {
 function getBillingDateString() {
   const today = new Date();
   const billingDate = new Date(today);
-  billingDate.setDate(today.getDate() + 7);
+  billingDate.setDate(today.getDate() + 3);
   const options = { year: "numeric", month: "short", day: "numeric" };
   return billingDate.toLocaleDateString(undefined, options);
 }
@@ -41,21 +42,44 @@ export default function OfferTrial({ navigation }) {
     async function fetchProducts() {
       try {
         const offerings = await Purchases.getOfferings();
+        console.log("Offerings:", JSON.stringify(offerings, null, 2));
         if (
           offerings.current &&
           offerings.current.availablePackages.length > 0
         ) {
-          setProducts(offerings.current.availablePackages);
+          // Find the weekly package
+          const weeklyPackage = offerings.current.availablePackages.find(
+            (pkg) => pkg.product.identifier.includes("weekly")
+          );
+
+          if (weeklyPackage) {
+            console.log(
+              "Selected Weekly Package:",
+              JSON.stringify(weeklyPackage, null, 2)
+            );
+            setProducts([weeklyPackage]);
+          } else {
+            console.log("No weekly package found");
+          }
+        } else {
+          console.log("No current offerings or packages available");
         }
       } catch (e) {
-        console.error(e);
+        console.error("Error fetching products:", e);
       }
     }
     fetchProducts();
   }, []);
 
   const handlePurchase = async () => {
-    if (products.length === 0) return;
+    if (products.length === 0) {
+      console.log("No products available for purchase");
+      return;
+    }
+    console.log(
+      "Attempting to purchase weekly package:",
+      JSON.stringify(products[0], null, 2)
+    );
     try {
       setProcessingPurchase(true);
       const { customerInfo } = await Purchases.purchasePackage(products[0]);
@@ -97,7 +121,7 @@ export default function OfferTrial({ navigation }) {
     <View style={styles.container}>
       <SafeAreaView style={styles.safeAreaHeader}>
         <Text style={styles.headerText}>
-          Start your <Text style={styles.headerHighlight}>7 day FREE</Text>{" "}
+          Start your <Text style={styles.headerHighlight}>3 day FREE</Text>{" "}
           trial to continue.
         </Text>
       </SafeAreaView>
@@ -108,7 +132,7 @@ export default function OfferTrial({ navigation }) {
           <View style={styles.timelineTextContainer}>
             <Text style={styles.timelineStepTitle}>Today</Text>
             <Text style={styles.timelineStepDesc}>
-              Unlock all the app's features like AI calorie scanning and more.
+              Unlock all the app's features.
             </Text>
           </View>
         </View>
@@ -117,7 +141,7 @@ export default function OfferTrial({ navigation }) {
           <View style={styles.timelineTextContainer}>
             <Text style={styles.timelineStepTitle}>In 2 Days - Reminder</Text>
             <Text style={styles.timelineStepDesc}>
-              We'll send you a reminder that your trial is ending soon.
+              We'll send you an email reminder that your trial is ending soon.
             </Text>
           </View>
         </View>
@@ -125,16 +149,16 @@ export default function OfferTrial({ navigation }) {
           <TimelineIcon type="billing" />
           <View style={styles.timelineTextContainer}>
             <Text style={[styles.timelineStepTitle, { color: "#fff" }]}>
-              In 7 Days - Billing Starts
+              In 3 Days - Billing Starts
             </Text>
             <Text style={[styles.timelineStepDesc, { color: "#fff" }]}>
-              You'll be charged on {billingDateString} unless you cancel anytime
-              before.
+              You'll be charged $4.99 weekly starting {billingDateString} unless
+              you cancel anytime before.
             </Text>
           </View>
         </View>
       </View>
-      <Text style={styles.priceText}> Then $19.99 per month</Text>
+      <Text style={styles.priceText}>$4.99 per week after trial</Text>
       <TouchableOpacity
         style={styles.button}
         onPress={handlePurchase}
@@ -143,7 +167,7 @@ export default function OfferTrial({ navigation }) {
         {processingPurchase ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Start my 7 day free trial</Text>
+          <Text style={styles.buttonText}>Start my 3 day free trial</Text>
         )}
       </TouchableOpacity>
       <TouchableOpacity

@@ -57,9 +57,9 @@ export default function Auth() {
       try {
         setIsLoading(true); // start loading
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info!:", customerInfo);
+
         const userId = customerInfo.originalAppUserId;
-        console.log("userId :>> ", userId);
+        console.log("userId in Auth.jsx :>> ", userId);
 
         const completedOnboarding = await hasCompletedOnboarding(userId);
         setHasOnboarded(completedOnboarding);
