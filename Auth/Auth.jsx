@@ -15,6 +15,9 @@ import How from "../Screens/How";
 import Offer from "../Screens/Offer";
 import { supabase } from "../Services/supabase";
 import ExitSurvey from "../Screens/ExitSurvey";
+import Email from "../Screens/Email";
+import NotificationsScreen from "../Screens/NotificationScreen";
+import OfferTrial from "../Screens/OfferTrial";
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
@@ -236,6 +239,39 @@ export default function Auth() {
       <Stack.Screen
         name="Help"
         component={Help}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Email"
+        component={Email}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="OfferTrial"
+        component={OfferTrial}
         options={({ route }) => ({
           tabBarVisible: false,
           headerBackTitle: "Back",

@@ -16,7 +16,7 @@ import {
 import Purchases from "react-native-purchases";
 import LottieView from "lottie-react-native";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 // Replace 'appl_uPPCiaHpkTLNkrlhOikrUMWLaBH' with your actual RevenueCat API key
 Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
@@ -159,7 +159,7 @@ export default function Welcome({ navigation }) {
 
             {/* 'Get Started' Button */}
             <TouchableOpacity
-              onPress={() => navigation.navigate("Ask")}
+              onPress={() => navigation.navigate("Email")}
               style={styles.button}
             >
               <Text style={styles.buttonText}>Get Started</Text>
@@ -221,31 +221,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   splashLogoImage: {
-    width: 100,
-    height: 100,
+    width: width * 0.25,
+    height: width * 0.25,
   },
   splashAppTitle: {
-    marginTop: 20,
-    fontSize: 28,
+    marginTop: height * 0.02,
+    fontSize: width * 0.07,
     fontWeight: "bold",
     color: "white",
-    marginBottom: 5,
+    marginBottom: height * 0.005,
   },
   // Main Content Styles
   cardContainer: {
-    paddingHorizontal: 5,
+    paddingHorizontal: width * 0.01,
   },
   lottie: {
-    width: 400,
-    height: 400,
+    width: width,
+    height: height * 0.5,
     alignSelf: "center",
   },
   card: {
     width: width * 0.65,
     height: width,
     backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 24,
-    marginHorizontal: 5,
+    borderRadius: width * 0.06,
+    marginHorizontal: width * 0.01,
     overflow: "hidden",
     position: "relative",
   },
@@ -255,30 +255,30 @@ const styles = StyleSheet.create({
   },
   ctaSection: {
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingHorizontal: width * 0.05,
+    paddingBottom: height * 0.03,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
-    bottom: 20,
+    marginBottom: height * 0.01,
+    bottom: height * 0.02,
   },
   appTitle: {
-    fontSize: 32,
+    fontSize: width * 0.08,
     fontWeight: "bold",
     color: "#ffffff",
   },
   styledTextContainer: {
     alignItems: "center",
-    marginBottom: 70,
+    marginBottom: height * 0.07,
   },
   ctaTitleWhite: {
     color: "white",
-    fontSize: 38,
+    fontSize: width * 0.095,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 48,
+    lineHeight: width * 0.12,
   },
   coloredTextRow: {
     flexDirection: "row",
@@ -286,35 +286,35 @@ const styles = StyleSheet.create({
   },
   ctaTitleBlue: {
     color: "#1E90FF",
-    fontSize: 38,
+    fontSize: width * 0.095,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 48,
+    lineHeight: width * 0.12,
   },
   ctaTitleGreen: {
     color: "#00FF7F",
-    fontSize: 38,
+    fontSize: width * 0.095,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 48,
+    lineHeight: width * 0.12,
   },
   button: {
     backgroundColor: "white",
-    paddingVertical: 16,
-    paddingHorizontal: 30,
-    borderRadius: 30,
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.075,
+    borderRadius: width * 0.075,
     width: "100%",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: height * 0.01,
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: width * 0.045,
     fontWeight: "bold",
     color: "#333",
   },
   restoreText: {
-    marginTop: 6,
-    fontSize: 16,
+    marginTop: height * 0.007,
+    fontSize: width * 0.04,
     fontWeight: "600",
     color: "#fff",
     textDecorationLine: "underline",
