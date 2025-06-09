@@ -253,7 +253,7 @@ const Why = ({ route, navigation }) => {
             </View>
             <Text style={styles.appTitle}>Parlay Pal</Text>
           </View>
-          <Text style={styles.mainHeading}>Why Parlay Pal?</Text>
+          {/* <Text style={styles.mainHeading}>Why Parlay Pal?</Text> */}
           <Text style={styles.subtitle}>
             Personalized betting intelligence powered by AI
           </Text>

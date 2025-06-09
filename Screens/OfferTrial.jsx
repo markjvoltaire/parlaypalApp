@@ -191,14 +191,8 @@ export default function Trial({ navigation }) {
 
         <View style={styles.offerContainer}>
           <Text style={styles.offerText}>Get </Text>
-          <LinearGradient
-            colors={["#00d2ff", "#3a7bd5"]}
-            style={styles.freeTextContainer}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={styles.freeText}>3 days FREE</Text>
-          </LinearGradient>
+
+          <Text style={styles.freeText}>3 days FREE</Text>
         </View>
 
         <Text style={styles.emailHeadline}>

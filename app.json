@@ -2,7 +2,7 @@
   "expo": {
     "name": "Parlay Pal",
     "slug": "parlayPal",
-    "version": "2.3.1",
+    "version": "2.3.2",
     "orientation": "portrait",
     "icon": "./assets/parlaypalIcon.png",
     "userInterfaceStyle": "light",
