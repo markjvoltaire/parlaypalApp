@@ -685,7 +685,10 @@ export default function Home({ navigation }) {
                       <View style={styles.loadingContainer}>
                         <ActivityIndicator color="#ffffff" size="small" />
                         <Text style={styles.loadingText}>
-                          Analyzing slip...
+                          Analyzing slip...{"\n"}
+                          <Text style={styles.loadingSubText}>
+                            More legs = longer processing time
+                          </Text>
                         </Text>
                       </View>
                     ) : (
@@ -724,6 +727,9 @@ export default function Home({ navigation }) {
                 style={styles.lottie}
               />
               <Text style={styles.modalText}>Scanning your bet slip...</Text>
+              <Text style={styles.modalDisclaimerText}>
+                Analysis may take longer for parlays with more legs.
+              </Text>
             </View>
           </Modal>
         </>
@@ -917,6 +923,11 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     marginLeft: 8,
     fontWeight: "600",
+  },
+  loadingSubText: {
+    fontSize: 12,
+    color: "#B0B7C8",
+    marginTop: 4,
   },
   clearButton: {
     backgroundColor: "#FF4D4F",
@@ -1170,7 +1181,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontWeight: "800",
   },
-
+  modalDisclaimerText: {
+    color: "#B0B7C8",
+    fontSize: 14,
+    marginTop: 10,
+    textAlign: "center",
+    marginHorizontal: 20,
+  },
   betAnalysisContainer: {
     backgroundColor: "rgba(255,255,255,0.05)",
     padding: 8,

@@ -724,6 +724,9 @@ export default function AccessGranted({ navigation }) {
                 style={styles.lottie}
               />
               <Text style={styles.modalText}>Scanning your bet slip...</Text>
+              <Text style={styles.modalDisclaimerText}>
+                Analysis may take longer for parlays with more legs.
+              </Text>
             </View>
           </Modal>
         </>
@@ -1169,6 +1172,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 10,
     fontWeight: "800",
+  },
+  modalDisclaimerText: {
+    color: "#B0B7C8",
+    fontSize: 14,
+    marginTop: 10,
+    textAlign: "center",
+    marginHorizontal: 20,
   },
 
   betAnalysisContainer: {

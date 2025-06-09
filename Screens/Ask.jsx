@@ -141,7 +141,7 @@ export default function Ask({ navigation, route }) {
             console.error("Error saving responses:", error.message);
           } else {
             console.log("Responses saved:", data);
-            navigation.navigate("How");
+            navigation.navigate("How", { surveyAnswers: updatedAnswers });
           }
         } catch (e) {
           console.error("Unexpected error:", e);

@@ -7,9 +7,10 @@ import {
   ActivityIndicator,
   Dimensions,
   Alert,
-  ScrollView,
+  Animated,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { LinearGradient } from "expo-linear-gradient";
 import Purchases from "react-native-purchases";
 
 const { width, height } = Dimensions.get("window");
@@ -105,6 +106,52 @@ const usePurchase = () => {
 export default function Trial({ navigation }) {
   const { product, processingPurchase, handlePurchase } = usePurchase();
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Start animations on mount
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Start pulse animation for the button
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.03,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
+
+    return () => pulseAnimation.stop();
+  }, []);
+
   const onPurchasePress = async () => {
     const success = await handlePurchase();
     if (success) {
@@ -113,118 +160,291 @@ export default function Trial({ navigation }) {
   };
 
   return (
-    <ScrollView
+    <LinearGradient
+      colors={["#0F0C29", "#24243e", "#302b63"]}
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
     >
-      <View style={styles.content}>
-        <View style={styles.textContainer}>
-          <Text style={styles.offerText}>
-            <Text style={styles.offerText}>We offer</Text>
-            <Text> </Text>
-            <Text style={styles.freeText}>3 days free</Text>
-          </Text>
-          <Text style={styles.subText}>so everyone can try Parlay Pal!</Text>
+      {/* Header Section */}
+      <Animated.View
+        style={[
+          styles.headerSection,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        <View style={styles.badgeContainer}>
+          {/* <LinearGradient
+            colors={["#667eea", "#764ba2"]}
+            style={styles.badge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={styles.badgeText}>✨ LIMITED TIME</Text>
+          </LinearGradient> */}
         </View>
 
-        <Image
-          source={require("../assets/iphone1.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <Text style={styles.mainTitle}>
+          Experience <Text style={styles.brandText}>Parlay Pal</Text>
+        </Text>
 
-        <Text style={styles.priceText}>$4.99 per week after trial</Text>
-      </View>
+        <View style={styles.offerContainer}>
+          <Text style={styles.offerText}>Get </Text>
+          <LinearGradient
+            colors={["#00d2ff", "#3a7bd5"]}
+            style={styles.freeTextContainer}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={styles.freeText}>3 days FREE</Text>
+          </LinearGradient>
+        </View>
 
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={onPurchasePress}
-          disabled={processingPurchase || !product}
-        >
-          {processingPurchase ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Try for $0.00</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <Text style={styles.emailHeadline}>
+          ✉️ We’ll email you a day before your trial ends.
+        </Text>
+      </Animated.View>
+
+      {/* Phone Image Section */}
+      <Animated.View
+        style={[
+          styles.phoneSection,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <View style={styles.glassContainer}>
+          <Image
+            source={require("../assets/iphone1.png")}
+            style={styles.phoneImage}
+            resizeMode="contain"
+          />
+        </View>
+      </Animated.View>
+
+      {/* Bottom Section */}
+      <Animated.View
+        style={[
+          styles.bottomSection,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        <View style={styles.pricingContainer}>
+          <Text style={styles.priceText}>Then $4.99/week</Text>
+          <Text style={styles.priceSubtext}>
+            Cancel anytime • No commitment
+          </Text>
+        </View>
+
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <TouchableOpacity
+            style={[
+              styles.ctaButton,
+              (processingPurchase || !product) && styles.ctaButtonDisabled,
+            ]}
+            onPress={onPurchasePress}
+            disabled={processingPurchase || !product}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={
+                processingPurchase || !product
+                  ? ["#666", "#444"]
+                  : ["#667eea", "#764ba2", "#6B73FF"]
+              }
+              style={styles.buttonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              {processingPurchase ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={styles.buttonText}>Processing...</Text>
+                </View>
+              ) : (
+                <View style={styles.buttonContent}>
+                  <Text style={styles.buttonText}>Start Free Trial</Text>
+                  <Text style={styles.buttonSubtext}>No charge today</Text>
+                </View>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <Text style={styles.disclaimerText}>
+          Auto-renews unless cancelled 24h before trial ends
+        </Text>
+      </Animated.View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111427",
+    paddingTop: height * 0.06,
+    paddingBottom: height * 0.04,
+    paddingHorizontal: width * 0.06,
   },
-  contentContainer: {
-    flexGrow: 1,
-    justifyContent: "space-between",
+  headerSection: {
     alignItems: "center",
-    paddingVertical: height * 0.04,
-  },
-  content: {
-    flex: 1,
+    flex: 0.25,
     justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
   },
-  textContainer: {
+  badgeContainer: {
+    marginBottom: height * 0.015,
+  },
+  badge: {
+    paddingHorizontal: width * 0.04,
+    paddingVertical: height * 0.008,
+    borderRadius: 20,
+    shadowColor: "#667eea",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: width * 0.032,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  mainTitle: {
+    color: "#fff",
+    fontSize: width * 0.07,
+    fontWeight: "300",
+    textAlign: "center",
+    marginBottom: height * 0.01,
+    lineHeight: width * 0.08,
+  },
+  brandText: {
+    fontWeight: "700",
+    color: "#667eea",
+  },
+  offerContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: height * 0.02,
+    justifyContent: "center",
   },
   offerText: {
     color: "#fff",
-    fontSize: width * 0.06,
-    fontWeight: "600",
-    textAlign: "center",
-    marginBottom: height * 0.005,
+    fontSize: width * 0.05,
+    fontWeight: "400",
+  },
+  freeTextContainer: {
+    paddingHorizontal: width * 0.025,
+    paddingVertical: height * 0.004,
+    borderRadius: 10,
+    marginLeft: width * 0.015,
   },
   freeText: {
-    color: "#1E90FF",
-    fontSize: width * 0.06,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  subText: {
     color: "#fff",
-    fontSize: width * 0.06,
-    textAlign: "center",
-    marginBottom: height * 0.002,
+    fontSize: width * 0.05,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  logo: {
-    width: width * 1,
-    height: width * 1.25,
-    marginTop: height * 0.01,
-    marginBottom: height * 0.01,
-  },
-  buttonsContainer: {
-    width: "100%",
+  phoneSection: {
+    flex: 0.5,
     alignItems: "center",
-    paddingHorizontal: width * 0.05,
+    justifyContent: "center",
   },
-  button: {
-    backgroundColor: "#1E90FF",
-    borderRadius: width * 0.06,
-    paddingVertical: height * 0.02,
-    paddingHorizontal: width * 0.1,
-    marginBottom: height * 0.01,
-    width: "100%",
-    alignSelf: "center",
+  glassContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 20,
+    padding: width * 0.03,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: width * 0.045,
-    fontWeight: "600",
-    textAlign: "center",
+  phoneImage: {
+    width: width * 0.68,
+    height: height * 0.38,
+  },
+  bottomSection: {
+    flex: 0.25,
+    justifyContent: "space-between",
+  },
+  pricingContainer: {
+    alignItems: "center",
+    marginBottom: height * 0.015,
   },
   priceText: {
     color: "#fff",
-    fontSize: width * 0.06,
+    fontSize: width * 0.045,
+    fontWeight: "600",
+    marginBottom: height * 0.005,
+  },
+  priceSubtext: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: width * 0.032,
+    fontWeight: "400",
+  },
+  ctaButton: {
+    width: "100%",
+    marginBottom: height * 0.015,
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#667eea",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  ctaButtonDisabled: {
+    shadowOpacity: 0.2,
+  },
+  buttonGradient: {
+    paddingVertical: height * 0.018,
+    paddingHorizontal: width * 0.06,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonContent: {
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: width * 0.042,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    paddingLeft: 10,
+  },
+  buttonSubtext: {
+    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: width * 0.03,
+    fontWeight: "400",
+    marginTop: height * 0.003,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  emailHeadline: {
+    color: "#fff",
+    fontSize: width * 0.038,
+    fontWeight: "700",
     textAlign: "center",
     marginTop: height * 0.02,
-    fontWeight: "600",
-    marginBottom: height * 0.02,
+    opacity: 0.9,
+    lineHeight: width * 0.045,
+    top: 15,
+  },
+  disclaimerText: {
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: width * 0.026,
+    textAlign: "center",
+    fontWeight: "300",
+    lineHeight: width * 0.032,
   },
 });

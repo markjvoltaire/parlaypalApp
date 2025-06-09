@@ -18,6 +18,7 @@ import ExitSurvey from "../Screens/ExitSurvey";
 import Email from "../Screens/Email";
 import NotificationsScreen from "../Screens/NotificationScreen";
 import OfferTrial from "../Screens/OfferTrial";
+import Why from "../Screens/Why";
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
@@ -272,6 +273,17 @@ export default function Auth() {
       <Stack.Screen
         name="OfferTrial"
         component={OfferTrial}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Why"
+        component={Why}
         options={({ route }) => ({
           tabBarVisible: false,
           headerBackTitle: "Back",
