@@ -24,53 +24,56 @@ export default function Auth() {
   const Stack = createNativeStackNavigator();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const isFetchingRef = useRef(false); // flag to prevent concurrent requests
+  const [isLoading, setIsLoading] = useState(true);
+  const isFetchingRef = useRef(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
   const [initialScreen, setInitialScreen] = useState(null);
 
   const hasCompletedOnboarding = async (userId) => {
-    const { data, error } = await supabase
-      .from("survey") // or "surveys" if your actual table name differs
-      .select("id")
-      .eq("userId", userId)
-      .limit(1);
+    try {
+      const { data, error } = await supabase
+        .from("survey")
+        .select("id")
+        .eq("userId", userId)
+        .limit(1);
 
-    if (error) {
-      console.error("Error checking onboarding status:", error);
-      return false; // fallback: treat as not completed
+      if (error) {
+        console.error("Error checking onboarding status:", error);
+        return false;
+      }
+
+      return data.length > 0;
+    } catch (error) {
+      console.error("Error in hasCompletedOnboarding:", error);
+      return false;
     }
-
-    return data.length > 0;
   };
 
-  // Fetch products and subscription status from RevenueCat when component mounts
   useEffect(() => {
+    let isMounted = true;
+
     const checkSubscriptionStatus = async () => {
       if (isFetchingRef.current) {
-        // Already fetching, so skip this call
         return;
       }
+
       isFetchingRef.current = true;
+      setIsLoading(true);
+
       try {
-        setIsLoading(true); // start loading
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info!:", customerInfo);
+        if (!isMounted) return;
+
         const userId = customerInfo.originalAppUserId;
-        console.log("userId :>> ", userId);
-
         const completedOnboarding = await hasCompletedOnboarding(userId);
+        if (!isMounted) return;
+
         setHasOnboarded(completedOnboarding);
-        console.log("completedOnboarding :>> ", completedOnboarding);
 
-        // Check for subscription
-        const isSubscribedUser =
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0;
-
+        const isSubscribedUser = customerInfo.activeSubscriptions?.length > 0;
         setIsSubscribed(isSubscribedUser);
 
-        // Determine initial screen
+        // Set initial screen based on subscription and onboarding status
         if (isSubscribedUser) {
           setInitialScreen("Home");
         } else if (!completedOnboarding) {
@@ -79,45 +82,44 @@ export default function Auth() {
           setInitialScreen("Home");
         }
 
-        // Check for active subscriptions
-        if (
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0
-        ) {
-          console.log("User is currently subscribed.");
-          setIsSubscribed(true);
-        } else {
-          console.log("User is not subscribed.");
-          setIsSubscribed(false);
-        }
-
         // Fetch available products
         const offerings = await Purchases.getOfferings();
-        if (
-          offerings.current !== null &&
-          offerings.current.availablePackages.length > 0
-        ) {
+        if (!isMounted) return;
+
+        if (offerings.current?.availablePackages?.length > 0) {
           setProducts(offerings.current.availablePackages);
         }
       } catch (error) {
-        if (error.message && error.message.includes("already in progress")) {
+        if (!isMounted) return;
+
+        if (error.message?.includes("already in progress")) {
           console.warn(
             "Operation already in progress. Skipping duplicate call."
           );
+          // Set a default screen if we're stuck
+          setInitialScreen("Welcome");
         } else {
           console.error("Error fetching customer info:", error);
+          // Set a default screen on error
+          setInitialScreen("Welcome");
         }
       } finally {
-        isFetchingRef.current = false;
-        setIsLoading(false); // end loading regardless of result
+        if (isMounted) {
+          isFetchingRef.current = false;
+          setIsLoading(false);
+        }
       }
     };
 
     checkSubscriptionStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Show a loading indicator while subscription status is being checked
-  if (isLoading || initialScreen === null) {
+  // Show loading indicator only when we're actually loading and don't have an initial screen
+  if (isLoading && initialScreen === null) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="white" />
