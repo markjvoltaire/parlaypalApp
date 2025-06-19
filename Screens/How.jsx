@@ -62,6 +62,8 @@ export default function How({ navigation, route }) {
 
   // Retrieve surveyAnswers from route.params
   const surveyAnswers = route.params?.surveyAnswers || {};
+  const email = route.params?.email || "";
+  const userId = route.params?.userId || "";
 
   /* ──────────────────────────── */
   return (
@@ -93,7 +95,11 @@ export default function How({ navigation, route }) {
           onPress={
             isLastSlide
               ? () =>
-                  navigation.navigate("Why", { surveyAnswers: surveyAnswers })
+                  navigation.navigate("Why", {
+                    surveyAnswers: surveyAnswers,
+                    email,
+                    userId,
+                  })
               : handleNext
           }
         >

@@ -12,6 +12,7 @@ import {
 import React, { useEffect, useState, useRef } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Purchases from "react-native-purchases";
+import { supabase } from "../Services/supabase";
 
 const { width, height } = Dimensions.get("window");
 
@@ -27,7 +28,6 @@ const usePurchase = () => {
   const fetchProducts = async () => {
     try {
       const offerings = await Purchases.getOfferings();
-      console.log("All offerings:", JSON.stringify(offerings, null, 2));
 
       let weeklyPackage = null;
 
@@ -49,15 +49,8 @@ const usePurchase = () => {
       }
 
       if (weeklyPackage) {
-        console.log(
-          "Found weekly package:",
-          JSON.stringify(weeklyPackage, null, 2)
-        );
         setProduct(weeklyPackage);
       } else {
-        console.log(
-          "Weekly package (premium.weeklyaccess) not found in any offering."
-        );
         Alert.alert(
           "Error",
           "Weekly subscription option not found. Please try again later."
@@ -103,8 +96,10 @@ const usePurchase = () => {
 };
 
 // Main component
-export default function Trial({ navigation }) {
+export default function Trial({ navigation, route }) {
   const { product, processingPurchase, handlePurchase } = usePurchase();
+
+  const email = route?.params?.email || "";
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -153,9 +148,28 @@ export default function Trial({ navigation }) {
   }, []);
 
   const onPurchasePress = async () => {
-    const success = await handlePurchase();
-    if (success) {
-      navigation.navigate("AccessGranted");
+    try {
+      const success = await handlePurchase();
+      let customerInfo;
+      try {
+        customerInfo = await Purchases.getCustomerInfo();
+      } catch (err) {
+        console.error("Error getting customer info:", err);
+        return;
+      }
+      const userId = customerInfo.originalAppUserId;
+      if (success) {
+        const { error } = await supabase.from("trials").insert({
+          email: email,
+          userid: userId,
+        });
+        if (error) {
+          console.error("Error inserting into trials table:", error);
+        }
+        navigation.navigate("AccessGranted");
+      }
+    } catch (err) {
+      console.error("Error in onPurchasePress:", err);
     }
   };
 
@@ -196,7 +210,7 @@ export default function Trial({ navigation }) {
         </View>
 
         <Text style={styles.emailHeadline}>
-          ✉️ We’ll email you a day before your trial ends.
+          ✉️ We'll email you a day before your trial ends.
         </Text>
       </Animated.View>
 

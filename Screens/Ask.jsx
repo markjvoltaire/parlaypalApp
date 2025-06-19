@@ -58,9 +58,6 @@ export default function Ask({ navigation, route }) {
   const email = route?.params?.email || null;
   const expoToken = route?.params?.expoToken || null;
 
-  console.log("email", email);
-  console.log("expoToken!", expoToken);
-
   const questions = [
     "What type of bets do you usually place?",
     "How much time do you spend doing research?",
@@ -141,7 +138,11 @@ export default function Ask({ navigation, route }) {
             console.error("Error saving responses:", error.message);
           } else {
             console.log("Responses saved:", data);
-            navigation.navigate("How", { surveyAnswers: updatedAnswers });
+            navigation.navigate("How", {
+              surveyAnswers: updatedAnswers,
+              email,
+              userId,
+            });
           }
         } catch (e) {
           console.error("Unexpected error:", e);

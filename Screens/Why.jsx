@@ -16,6 +16,9 @@ const { width, height } = Dimensions.get("window");
 
 const Why = ({ route, navigation }) => {
   const surveyAnswers = route.params?.surveyAnswers || {};
+  const email = route.params?.email || "";
+  const userId = route.params?.userId || "";
+
   const [content, setContent] = useState([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -67,7 +70,7 @@ const Why = ({ route, navigation }) => {
               color="#7789FF"
             />
           </View>
-          <Text style={styles.welcomeTitle}>1,800+ Slips Analyzed!</Text>
+          <Text style={styles.welcomeTitle}>3,000+ Slips Analyzed!</Text>
           <Text style={styles.welcomeText}>
             Our AI has processed thousands of bet slips to provide accurate
             insights.
@@ -273,7 +276,9 @@ const Why = ({ route, navigation }) => {
           <View style={styles.ctaContent}>
             <TouchableOpacity
               style={styles.ctaButton}
-              onPress={() => navigation.navigate("OfferTrial")}
+              onPress={() =>
+                navigation.navigate("OfferTrial", { email, userId })
+              }
               activeOpacity={0.8}
             >
               <LinearGradient
