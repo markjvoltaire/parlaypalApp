@@ -193,11 +193,7 @@ export default function Profile({ navigation }) {
               <>
                 <View style={styles.row}>
                   <View style={styles.rowIconContainer}>
-                    <Ionicons
-                      name="bookmark-outline"
-                      size={20}
-                      color="#7789FF"
-                    />
+                    <Ionicons name="bookmark-outline" size={20} color="white" />
                   </View>
                   <View style={styles.rowContent}>
                     <Text style={styles.rowLabel}>Status</Text>
@@ -218,7 +214,7 @@ export default function Profile({ navigation }) {
                 </View>
                 <View style={styles.row}>
                   <View style={styles.rowIconContainer}>
-                    <Ionicons name="gift-outline" size={20} color="#7789FF" />
+                    <Ionicons name="gift-outline" size={20} color="white" />
                   </View>
                   <View style={styles.rowContent}>
                     <Text style={styles.rowLabel}>Current Plan</Text>
@@ -234,15 +230,11 @@ export default function Profile({ navigation }) {
                   onPress={() => navigation.navigate("ExitSurvey")}
                 >
                   <View style={styles.rowIconContainer}>
-                    <Ionicons name="card-outline" size={20} color="#7789FF" />
+                    <Ionicons name="card-outline" size={20} color="white" />
                   </View>
                   <View style={styles.rowContent}>
                     <Text style={styles.rowLabel}>Manage Subscription</Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color="#8A94B0"
-                    />
+                    <Ionicons name="chevron-forward" size={20} color="white" />
                   </View>
                 </TouchableOpacity>
 
@@ -255,16 +247,12 @@ export default function Profile({ navigation }) {
                     <Ionicons
                       name="refresh-circle-outline"
                       size={20}
-                      color="#7789FF"
+                      color="white"
                     />
                   </View>
                   <View style={styles.rowContent}>
                     <Text style={styles.rowLabel}>Restore Purchase</Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color="#8A94B0"
-                    />
+                    <Ionicons name="chevron-forward" size={20} color="white" />
                   </View>
                 </TouchableOpacity>
               </>
@@ -282,15 +270,11 @@ export default function Profile({ navigation }) {
               style={styles.row}
             >
               <View style={styles.rowIconContainer}>
-                <Ionicons
-                  name="help-circle-outline"
-                  size={20}
-                  color="#7789FF"
-                />
+                <Ionicons name="help-circle-outline" size={20} color="white" />
               </View>
               <View style={styles.rowContent}>
                 <Text style={styles.rowLabel}>Help & Support</Text>
-                <Ionicons name="chevron-forward" size={20} color="#8A94B0" />
+                <Ionicons name="chevron-forward" size={20} color="white" />
               </View>
             </TouchableOpacity>
 
@@ -302,12 +286,12 @@ export default function Profile({ navigation }) {
                 <Ionicons
                   name="document-text-outline"
                   size={20}
-                  color="#7789FF"
+                  color="white"
                 />
               </View>
               <View style={styles.rowContent}>
                 <Text style={styles.rowLabel}>Privacy Policy</Text>
-                <Ionicons name="chevron-forward" size={20} color="#8A94B0" />
+                <Ionicons name="chevron-forward" size={20} color="white" />
               </View>
             </TouchableOpacity>
 
@@ -319,12 +303,12 @@ export default function Profile({ navigation }) {
                 <Ionicons
                   name="shield-checkmark-outline"
                   size={20}
-                  color="#7789FF"
+                  color="white"
                 />
               </View>
               <View style={styles.rowContent}>
                 <Text style={styles.rowLabel}>Terms of Service</Text>
-                <Ionicons name="chevron-forward" size={20} color="#8A94B0" />
+                <Ionicons name="chevron-forward" size={20} color="white" />
               </View>
             </TouchableOpacity>
           </View>
@@ -342,7 +326,7 @@ export default function Profile({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#101426",
+    backgroundColor: "black",
   },
   header: {
     flexDirection: "row",
@@ -376,7 +360,7 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: "#4F63E8",
+    backgroundColor: "#1C1C1E",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
@@ -414,7 +398,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   sectionCard: {
-    backgroundColor: "#1C2135",
+    backgroundColor: "#1C1C1E",
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -444,7 +428,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(79, 99, 232, 0.1)",
+    backgroundColor: "#1C1C1E",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,

@@ -2,15 +2,15 @@
   "expo": {
     "name": "Parlay Pal",
     "slug": "parlayPal",
-    "version": "2.3.4",
+    "version": "2.3.5",
     "orientation": "portrait",
     "icon": "./assets/parlaypalIcon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/parlaypalSplash.png",
+      "image": "./assets/blackSplash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1C2135"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": false,

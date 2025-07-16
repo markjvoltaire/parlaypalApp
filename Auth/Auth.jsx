@@ -324,6 +324,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#101426",
+    backgroundColor: "black",
   },
 });

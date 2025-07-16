@@ -140,7 +140,6 @@ export default function Home({ navigation }) {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
         const userId = customerInfo.originalAppUserId;
-        console.log("Customer Info:", customerInfo.entitlements);
 
         // Check for active subscriptions
         if (
@@ -263,12 +262,14 @@ export default function Home({ navigation }) {
 
       formData.append("userId", userId);
 
-      const response = await fetch(`${API_URL}/analyze`, {
+      const response = await fetch(`${API_URL}/analyzeCover`, {
         method: "POST",
         body: formData,
       });
 
       const responseData = await response.json();
+
+      // console.log("responseData", responseData);
 
       if (response.ok) {
         // Instead of storing slipInfo and advancedAnalysis separately,
@@ -311,6 +312,8 @@ export default function Home({ navigation }) {
 
         // Merge slipInfo and advancedAnalysis together
         mergedData = { ...mergedData, ...parsedAnalysis };
+
+        console.log("mergedData", mergedData);
 
         // Now we have one unified object
         setAnalysisResponse(mergedData);
@@ -361,7 +364,7 @@ export default function Home({ navigation }) {
 
     return (
       <View style={styles.probabilityIndicator}>
-        <View style={[styles.indicatorBar, { backgroundColor: "#2A3350" }]}>
+        <View style={[styles.indicatorBar, { backgroundColor: "#1C1C1E" }]}>
           <View
             style={[
               styles.indicatorFill,
@@ -391,7 +394,7 @@ export default function Home({ navigation }) {
     return (
       <View style={styles.betProbabilityContainer}>
         <View
-          style={[styles.betProbabilityBar, { backgroundColor: "#2A3350" }]}
+          style={[styles.betProbabilityBar, { backgroundColor: "#1C1C1E" }]}
         >
           <View
             style={[
@@ -447,36 +450,26 @@ export default function Home({ navigation }) {
 
         {/* Summary Card with stake, odds, probability */}
         <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Parlay Odds</Text>
-              <Text style={styles.summaryValue}>
-                {parlay_odds ? `+${parlay_odds}` : "N/A"}
-              </Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Stake</Text>
-              <Text style={styles.summaryValue}>
-                {stake ? `$${stake}` : "N/A"}
-              </Text>
-            </View>
-          </View>
-
           <View style={styles.probabilitySection}>
             <Text style={styles.probabilityLabel}>Win Probability</Text>
             {renderProbabilityIndicator(parlay_probability)}
+
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={resetAnalysis}
+            >
+              <Text style={styles.clearButtonText}>Remove Slip</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
         {/* AI Insight Card */}
-        <View style={styles.insightCard}>
+        {/* <View style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <MaterialCommunityIcons name="robot" size={20} color="#7789FF" />
             <Text style={styles.insightTitle}>AI Insight</Text>
           </View>
 
-          {/* Show parlay_summary if available */}
           {parlay_summary?.expected_outcome && (
             <Text style={styles.insightText}>
               {parlay_summary.expected_outcome}
@@ -492,7 +485,7 @@ export default function Home({ navigation }) {
               - {item}
             </Text>
           ))}
-        </View>
+        </View> */}
 
         {/* Bet Details (Leagues, Bets) */}
         <Text style={styles.sectionTitle}>Bet Details</Text>
@@ -511,75 +504,126 @@ export default function Home({ navigation }) {
                       : "trophy"
                   }
                   size={18}
-                  color="#7789FF"
+                  color="white"
                 />
                 <Text style={styles.leagueTitle}>{league.league}</Text>
               </View>
 
               {league.parlay_bets &&
-                league.parlay_bets.map((bet, betIdx) => (
-                  <View key={`bet-${betIdx}`} style={styles.betContainer}>
-                    {/* Bet Header: detail & odds */}
-                    <View style={styles.betHeader}>
-                      <Text style={styles.betDetail}>
-                        {bet.detail || "N/A"}
-                      </Text>
-                      <View style={styles.oddsTag}>
-                        <Text style={styles.oddsText}>
-                          {bet.odds && bet.odds > 0 ? `+${bet.odds}` : bet.odds}
+                league.parlay_bets.map((bet, betIdx) => {
+                  // Debug: log each bet object
+                  console.log("Rendering parlay_bet:", bet);
+                  return (
+                    <View key={`bet-${betIdx}`} style={styles.betContainer}>
+                      {/* Bet Header: detail & odds */}
+                      <View style={styles.betHeader}>
+                        <Text style={styles.betDetail}>
+                          {bet.detail || "N/A"}
                         </Text>
+                        <View style={styles.oddsTag}>
+                          <Text style={styles.oddsText}>
+                            {bet.odds && bet.odds > 0
+                              ? `+${bet.odds}`
+                              : bet.odds}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Bet Info Row (Teams, etc.) */}
+                      {bet.teams && (
+                        <View style={styles.betInfoRow}>
+                          <Text style={styles.betInfoKey}>Teams:</Text>
+                          <Text style={styles.betInfoValue}>
+                            {bet.teams.join(" vs ")}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Probability bar for this bet */}
+                      {bet.probability !== undefined &&
+                        renderBetProbability(bet.probability)}
+
+                      {/* Modern Insights Card */}
+                      <View style={styles.insightsCard}>
+                        {/* Cover Rate */}
+                        <View style={styles.insightRow}>
+                          <Ionicons
+                            name="trending-up"
+                            size={20}
+                            color="white"
+                            style={styles.insightIcon}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[styles.insightTitle, { color: "white" }]}
+                            >
+                              Cover Rate:
+                            </Text>
+                            <Text style={styles.insightText}>
+                              {bet.cover_analysis && bet.cover_analysis.key_stat
+                                ? bet.cover_analysis.key_stat
+                                : "No cover data"}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.insightDivider} />
+                        {/* Interesting Insight */}
+                        <View style={styles.insightRow}>
+                          <Ionicons
+                            name="sparkles-outline"
+                            size={20}
+                            color="white"
+                            style={styles.insightIcon}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[styles.insightTitle, { color: "white" }]}
+                            >
+                              Interesting Insight:
+                            </Text>
+                            <Text style={styles.insightText}>
+                              {bet.analysis && bet.analysis.key_stat
+                                ? bet.analysis.key_stat
+                                : "No insight"}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.insightDivider} />
+                        {/* Matchup Insight */}
+                        <View style={styles.insightRow}>
+                          <Ionicons
+                            name="people-outline"
+                            size={20}
+                            color="white"
+                            style={styles.insightIcon}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[styles.insightTitle, { color: "white" }]}
+                            >
+                              Matchup Insight:
+                            </Text>
+                            <Text style={styles.insightText}>
+                              {bet.analysis &&
+                              bet.analysis.matchup_consideration
+                                ? bet.analysis.matchup_consideration
+                                : "No matchup info"}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Footer (Bet Type, etc.) */}
+                      <View style={styles.betFooter}>
+                        <View style={styles.betTypeTag}>
+                          <Text style={styles.betTypeText}>
+                            {bet.bet_type || "N/A"}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-
-                    {/* Bet Info Row (Teams, etc.) */}
-                    {bet.teams && (
-                      <View style={styles.betInfoRow}>
-                        <Text style={styles.betInfoKey}>Teams:</Text>
-                        <Text style={styles.betInfoValue}>
-                          {bet.teams.join(" vs ")}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Probability bar for this bet */}
-                    {bet.probability !== undefined &&
-                      renderBetProbability(bet.probability)}
-
-                    {/* NEW: Analysis section below probability */}
-                    {bet.analysis && (
-                      <View style={styles.betAnalysisContainer}>
-                        <Text style={styles.analysisHeader}>Analysis</Text>
-
-                        {/* Key Stat */}
-                        <Text style={styles.analysisText}>
-                          <Text style={styles.label}>Key Stat: </Text>
-                          {bet.analysis.key_stat}
-                        </Text>
-
-                        {/* Matchup Consideration */}
-                        <Text style={styles.analysisText}>
-                          <Text style={styles.label}>Matchup: </Text>
-                          {bet.analysis.matchup_consideration}
-                        </Text>
-
-                        {/* Confidence Level */}
-                        <Text style={styles.analysisText}>
-                          <Text style={styles.label}>Confidence: </Text>
-                          {bet.analysis.confidence_level}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Footer (Bet Type, etc.) */}
-                    <View style={styles.betFooter}>
-                      <View style={styles.betTypeTag}>
-                        <Text style={styles.betTypeText}>
-                          {bet.bet_type || "N/A"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                ))}
+                  );
+                })}
             </View>
           ))}
 
@@ -617,7 +661,7 @@ export default function Home({ navigation }) {
               style={styles.profileButton}
               onPress={() => navigation.navigate("Profile")}
             >
-              <Ionicons name="person-circle" size={32} color="#7789FF" />
+              <Ionicons name="person-circle" size={32} color="#F4F4F4" />
             </TouchableOpacity>
           </View>
 
@@ -635,7 +679,7 @@ export default function Home({ navigation }) {
                     <Ionicons
                       name="cloud-upload-outline"
                       size={50}
-                      color="#7789FF"
+                      color="white"
                     />
                   </View>
                   <Text style={styles.uploadTitle}>Upload Your Bet Slip</Text>
@@ -654,8 +698,10 @@ export default function Home({ navigation }) {
                   </View>
                 </View>
               </View>
-            ) : (
-              // If image is chosen, show preview and analyze button
+            ) : null}
+
+            {/* If image is chosen and there are NO bet details, show preview and analyze/clear buttons */}
+            {image && !(analysisResponse?.leagues?.length > 0) && (
               <View style={styles.analysisSection}>
                 <View style={styles.imageContainer}>
                   <Image
@@ -663,53 +709,52 @@ export default function Home({ navigation }) {
                     style={styles.previewImage}
                     resizeMode="contain"
                   />
-                  <TouchableOpacity
-                    style={styles.changeImageButton}
-                    onPress={pickImage}
-                  >
-                    <Ionicons name="camera-outline" size={20} color="#fff" />
-                  </TouchableOpacity>
                 </View>
 
                 {/* Only show "Analyze" if we haven't gotten analysisResponse yet */}
                 {!analysisResponse && (
-                  <TouchableOpacity
-                    style={[
-                      styles.analyzeButton,
-                      uploading && styles.analyzeButtonDisabled,
-                    ]}
-                    onPress={uploadImage}
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <View style={styles.loadingContainer}>
-                        <ActivityIndicator color="#ffffff" size="small" />
-                        <Text style={styles.loadingText}>
-                          Analyzing slip...{"\n"}
-                          <Text style={styles.loadingSubText}>
-                            More legs = longer processing time
+                  <>
+                    <TouchableOpacity
+                      style={[
+                        styles.analyzeButton,
+                        uploading && styles.analyzeButtonDisabled,
+                      ]}
+                      onPress={uploadImage}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <View style={styles.loadingContainer}>
+                          <ActivityIndicator color="#ffffff" size="small" />
+                          <Text style={styles.loadingText}>
+                            Analyzing slip...{"\n"}
+                            <Text style={styles.loadingSubText}>
+                              More legs = longer processing time
+                            </Text>
                           </Text>
-                        </Text>
-                      </View>
-                    ) : (
-                      <>
-                        <MaterialCommunityIcons
-                          name="lightning-bolt"
-                          size={22}
-                          color="#fff"
-                        />
-                        <Text style={styles.buttonText}>Analyze Bet Slip</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <>
+                          <MaterialCommunityIcons
+                            name="lightning-bolt"
+                            size={22}
+                            color="#30E88D"
+                          />
+                          <Text style={styles.buttonText}>
+                            Analyze Bet Slip
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    {/* Clear button under Analyze Bet Slip button */}
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={resetAnalysis}
+                    >
+                      <Text style={styles.clearButtonText}>Remove Slip</Text>
+                    </TouchableOpacity>
+                  </>
                 )}
-
-                <TouchableOpacity
-                  style={styles.clearButton}
-                  onPress={resetAnalysis}
-                >
-                  <Text style={styles.clearButtonText}>Clear</Text>
-                </TouchableOpacity>
+                {/* Clear button removed from here */}
               </View>
             )}
 
@@ -741,7 +786,7 @@ export default function Home({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#111427",
+    backgroundColor: "#0A0A0A",
   },
   // Splash Screen Styles
   splashContainer: {
@@ -750,7 +795,7 @@ const styles = StyleSheet.create({
     height: height,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#101426",
+    backgroundColor: "#0A0A0A",
     zIndex: 1000,
   },
   splashLogoContainer: {
@@ -767,52 +812,65 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "rgba(119, 137, 255, 0.15)",
+    backgroundColor: "rgba(48, 232, 141, 0.10)",
     top: -10,
     left: -10,
   },
   splashAppTitle: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#fff",
     marginBottom: 8,
+    fontFamily: "Inter, System",
+    letterSpacing: 0.5,
   },
   splashAppTagline: {
     fontSize: 16,
-    color: "#7789FF",
+    color: "#30E88D",
+    fontFamily: "Inter, System",
+    letterSpacing: 0.2,
   },
   // Main App Styles
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
+    borderBottomColor: "rgba(255,255,255,0.04)",
   },
   profileButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#18181B",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   appTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#fff",
+    fontFamily: "Inter, System",
+    letterSpacing: 0.5,
   },
   appTagline: {
-    fontSize: 12,
-    color: "#7789FF",
+    fontSize: 13,
+    color: "#30E88D",
     marginTop: 2,
+    fontFamily: "Inter, System",
+    letterSpacing: 0.2,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
   },
   uploadSection: {
     alignItems: "center",
@@ -821,33 +879,41 @@ const styles = StyleSheet.create({
   },
   uploadCard: {
     width: "100%",
-    borderRadius: 20,
-    padding: 30,
+    borderRadius: 24,
+    padding: 36,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(79, 99, 232, 0.3)",
-    backgroundColor: "rgba(79, 99, 232, 0.05)",
+    borderColor: "#18181B",
+    backgroundColor: "#18181B",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
   uploadIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(79, 99, 232, 0.1)",
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#101113",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 22,
   },
   uploadTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 10,
+    color: "#fff",
+    marginBottom: 12,
+    fontFamily: "Inter, System",
+    letterSpacing: 0.5,
   },
   uploadDescription: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#8A94B0",
     textAlign: "center",
-    marginBottom: 30,
+    marginBottom: 32,
+    fontFamily: "Inter, System",
+    letterSpacing: 0.1,
   },
   uploadButtons: {
     flexDirection: "row",
@@ -858,33 +924,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 14,
     flex: 1,
+    backgroundColor: "#18181B",
+    marginHorizontal: 4,
   },
   uploadButtonText: {
-    color: "#ffffff",
+    color: "#fff",
     fontWeight: "600",
-    marginLeft: 8,
+    marginLeft: 10,
+    fontFamily: "Inter, System",
+    fontSize: 16,
   },
   galleryButton: {
-    backgroundColor: "#2C3254",
+    backgroundColor: "#101113",
     marginLeft: 8,
   },
   analysisSection: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   imageContainer: {
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
     position: "relative",
-    marginBottom: 16,
+    marginBottom: 18,
+    backgroundColor: "#18181B",
+    borderWidth: 1,
+    borderColor: "#232323",
   },
   previewImage: {
     width: "100%",
     height: undefined,
     aspectRatio: 4 / 3,
+    borderRadius: 18,
   },
   changeImageButton: {
     position: "absolute",
@@ -898,85 +972,115 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   analyzeButton: {
-    backgroundColor: "#4F63E8",
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: "black",
+    padding: 18,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     width: "100%",
+    marginBottom: 12,
+    shadowColor: "#30E88D",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
   analyzeButtonDisabled: {
-    backgroundColor: "rgba(79, 99, 232, 0.5)",
+    backgroundColor: "#1A1A1A",
   },
   buttonText: {
-    color: "#ffffff",
-    fontSize: 16,
+    color: "#30E88D",
+    fontSize: 17,
     fontWeight: "bold",
-    marginLeft: 8,
+    marginLeft: 10,
+    fontFamily: "Inter, System",
+    letterSpacing: 0.2,
   },
   loadingContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   loadingText: {
-    color: "#ffffff",
-    marginLeft: 8,
+    color: "#fff",
+    marginLeft: 10,
     fontWeight: "600",
+    fontFamily: "Inter, System",
   },
   loadingSubText: {
-    fontSize: 12,
-    color: "#B0B7C8",
+    fontSize: 13,
+    color: "#8A94B0",
     marginTop: 4,
+    fontFamily: "Inter, System",
   },
   clearButton: {
-    backgroundColor: "#FF4D4F",
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 10,
+    backgroundColor: "#101113",
+    padding: 14,
+    borderRadius: 14,
+    marginTop: 15,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#232323",
+    shadowColor: "red",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
   clearButtonText: {
-    color: "#fff",
+    color: "red",
     fontSize: 16,
     fontWeight: "bold",
+    fontFamily: "Inter, System",
+    letterSpacing: 0.2,
   },
   slipInfoWrapper: {
-    marginTop: 24,
+    marginTop: 28,
     width: "100%",
   },
   slipInfoHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 18,
+    bottom: 15,
   },
   slipInfoTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#fff",
+    fontFamily: "Inter, System",
+    letterSpacing: 0.5,
   },
   newAnalysisButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: "rgba(79, 99, 232, 0.2)",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    backgroundColor: "#18181B",
+    borderWidth: 1,
+    borderColor: "#232323",
   },
   newAnalysisText: {
-    color: "#7789FF",
-    fontSize: 12,
+    color: "#30E88D",
+    fontSize: 13,
     fontWeight: "600",
+    fontFamily: "Inter, System",
+    letterSpacing: 0.2,
   },
   summaryCard: {
-    backgroundColor: "#1C2135",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: "#18181B",
+    borderRadius: 20,
+    padding: 22,
+    marginBottom: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: "#232323",
   },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 22,
   },
   summaryItem: {
     flex: 1,
@@ -984,50 +1088,59 @@ const styles = StyleSheet.create({
   },
   summaryDivider: {
     width: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.07)",
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#8A94B0",
-    marginBottom: 8,
+    marginBottom: 10,
+    fontFamily: "Inter, System",
   },
   summaryValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#fff",
+    fontFamily: "Inter, System",
   },
   probabilitySection: {
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.05)",
-    paddingTop: 16,
+    borderTopColor: "rgba(255,255,255,0.04)",
+    paddingTop: 18,
   },
   probabilityLabel: {
-    fontSize: 14,
-    color: "#8A94B0",
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: "700",
+    bottom: 20,
+    color: "white",
+    marginBottom: 14,
+    fontFamily: "Inter, System",
   },
   probabilityIndicator: {
     width: "100%",
+    marginBottom: 8,
   },
   indicatorBar: {
-    height: 8,
-    borderRadius: 4,
+    height: 10,
+    borderRadius: 5,
     overflow: "hidden",
-    marginBottom: 8,
+    marginBottom: 10,
+    backgroundColor: "#232323",
   },
   indicatorFill: {
     height: "100%",
+    borderRadius: 5,
   },
   indicatorLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   indicatorValue: {
-    color: "#ffffff",
+    color: "#fff",
     fontWeight: "bold",
+    fontFamily: "Inter, System",
   },
   indicatorText: {
     fontWeight: "600",
+    fontFamily: "Inter, System",
   },
   insightCard: {
     backgroundColor: "rgba(79, 99, 232, 0.1)",
@@ -1055,158 +1168,232 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 16,
+    color: "#fff",
+    marginBottom: 18,
+    fontFamily: "Inter, System",
+    letterSpacing: 0.3,
   },
   leagueContainer: {
-    marginBottom: 16,
-    borderRadius: 16,
+    marginBottom: 18,
+    borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: "#1C2135",
+    backgroundColor: "#18181B",
+    borderWidth: 1,
+    borderColor: "#232323",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   leagueHeader: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
-    backgroundColor: "#252B47",
-  },
-  leagueTitle: {
-    color: "#ffffff",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  betContainer: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
+    borderBottomColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#101113",
+  },
+  leagueTitle: {
+    color: "#fff",
+    fontWeight: "500",
+    marginLeft: 10,
+    fontFamily: "Inter, System",
+    fontSize: 16,
+  },
+  betContainer: {
+    padding: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.04)",
   },
   betHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   betDetail: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#fff",
     flex: 1,
-    marginRight: 10,
+    marginRight: 12,
+    fontFamily: "Inter, System",
   },
   betInfoRow: {
     flexDirection: "row",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   betInfoKey: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#8A94B0",
     width: 60,
+    fontFamily: "Inter, System",
   },
   betInfoValue: {
-    fontSize: 14,
-    color: "#ffffff",
+    fontSize: 15,
+    color: "#fff",
     flex: 1,
+    fontWeight: "500",
+    fontFamily: "Inter, System",
   },
   betFooter: {
     flexDirection: "row",
-    marginTop: 10,
+    marginTop: 12,
   },
   betTypeTag: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    marginRight: 10,
+    backgroundColor: "#232323",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    marginRight: 12,
   },
   betTypeText: {
-    color: "#ffffff",
-    fontSize: 12,
+    color: "#fff",
+    fontSize: 15,
     fontWeight: "500",
+    fontFamily: "Inter, System",
   },
   oddsTag: {
-    backgroundColor: "#4F63E8",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 16,
+    backgroundColor: "#232323",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 18,
   },
   oddsText: {
-    color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "600",
+    color: "#30E88D",
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: "Inter, System",
   },
   betProbabilityContainer: {
-    marginVertical: 12,
+    marginVertical: 14,
     width: "100%",
   },
   betProbabilityBar: {
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     overflow: "hidden",
-    marginBottom: 4,
+    marginBottom: 6,
+    backgroundColor: "#232323",
   },
   betProbabilityFill: {
     height: "100%",
+    borderRadius: 4,
   },
   betProbabilityValue: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     alignSelf: "flex-end",
+    color: "#30E88D",
+    fontFamily: "Inter, System",
   },
   disclaimer: {
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: 22,
+    marginBottom: 34,
   },
   disclaimerText: {
     color: "#8A94B0",
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
+    fontFamily: "Inter, System",
   },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(16,20,38,0.85)",
+    backgroundColor: "rgba(10,10,10,0.92)",
   },
   lottie: {
-    width: 300,
-    height: 300,
+    width: 320,
+    height: 320,
   },
   modalText: {
-    color: "#ffffff",
-    fontSize: 18,
-    marginTop: 10,
+    color: "#fff",
+    fontSize: 20,
+    marginTop: 12,
     fontWeight: "800",
+    fontFamily: "Inter, System",
   },
   modalDisclaimerText: {
-    color: "#B0B7C8",
-    fontSize: 14,
-    marginTop: 10,
+    color: "#8A94B0",
+    fontSize: 15,
+    marginTop: 12,
     textAlign: "center",
-    marginHorizontal: 20,
+    marginHorizontal: 24,
+    fontFamily: "Inter, System",
   },
   betAnalysisContainer: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    padding: 8,
-    borderRadius: 8,
-    marginTop: 8,
+    backgroundColor: "#101113",
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 6,
+    marginBottom: 6,
   },
   analysisHeader: {
-    fontSize: 14,
+    fontSize: 19,
     fontWeight: "600",
-    color: "#ffffff",
-    marginBottom: 4,
+    color: "#fff",
+    marginBottom: 10,
+    fontFamily: "Inter, System",
   },
   analysisText: {
-    fontSize: 13,
-    color: "#B0B7C8",
-    marginBottom: 4,
+    fontSize: 15,
+    color: "#8A94B0",
+    marginBottom: 6,
+    fontFamily: "Inter, System",
   },
   label: {
-    fontWeight: "600",
-    color: "#ffffff",
+    fontSize: 15,
+    color: "#fff",
+    marginBottom: 14,
+    backgroundColor: "#101113",
+    borderRadius: 8,
+    padding: 12,
+    fontFamily: "Inter, System",
+    fontWeight: "400",
+  },
+  insightsCard: {
+    backgroundColor: "",
+    borderRadius: 18,
+    padding: 18,
+    marginTop: 10,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    borderWidth: 1,
+    borderColor: "#232323",
+  },
+  insightRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+  insightIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  insightTitle: {
+    fontWeight: "700",
+    fontSize: 14,
+    marginBottom: 2,
+    fontFamily: "Inter, System",
+    letterSpacing: 0.2,
+  },
+  insightText: {
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: "Inter, System",
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  insightDivider: {
+    height: 1,
+    backgroundColor: "#232323",
+    marginVertical: 8,
+    borderRadius: 1,
   },
 });
