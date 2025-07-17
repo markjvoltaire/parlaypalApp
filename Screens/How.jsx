@@ -16,7 +16,7 @@ import {
 const IMAGES = [
   require("../assets/uploadSlip.png"),
   require("../assets/instantAnalysis.png"),
-  require("../assets/nailBets.png"),
+  require("../assets/cover.png"),
 ];
 
 const HEADERS = [

@@ -70,7 +70,7 @@ const Why = ({ route, navigation }) => {
               color="#7789FF"
             />
           </View>
-          <Text style={styles.welcomeTitle}>3,000+ Slips Analyzed!</Text>
+          <Text style={styles.welcomeTitle}>7,000+ Slips Analyzed!</Text>
           <Text style={styles.welcomeText}>
             Our AI has processed thousands of bet slips to provide accurate
             insights.
@@ -83,10 +83,7 @@ const Why = ({ route, navigation }) => {
     if (betType === "Parlays") {
       messages.push(
         <View style={styles.featureCard} key="parlays">
-          <LinearGradient
-            colors={["rgba(82, 196, 26, 0.12)", "rgba(82, 196, 26, 0.04)"]}
-            style={styles.cardContent}
-          >
+          <View style={styles.cardContent}>
             <View
               style={[
                 styles.smallIconContainer,
@@ -105,7 +102,7 @@ const Why = ({ route, navigation }) => {
                 Comprehensive multi-leg analysis with probability calculations
               </Text>
             </View>
-          </LinearGradient>
+          </View>
         </View>
       );
     } else if (betType === "Single Bets" || betType === "Player Props") {
@@ -282,14 +279,14 @@ const Why = ({ route, navigation }) => {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={["#ffffff", "#f8f9ff"]}
+                colors={["#4F63E8", "#4F63E8"]}
                 style={styles.buttonGradient}
               >
                 <Text style={styles.ctaButtonText}>
                   Try Parlay Pal For Free
                 </Text>
                 <View style={styles.buttonIcon}>
-                  <Ionicons name="arrow-forward" size={18} color="#4F63E8" />
+                  <Ionicons name="arrow-forward" size={18} color="white" />
                 </View>
               </LinearGradient>
             </TouchableOpacity>
@@ -515,7 +512,7 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#4F63E8",
+    color: "white",
     letterSpacing: 0.2,
   },
   buttonIcon: {
