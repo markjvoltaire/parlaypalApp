@@ -19,6 +19,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import Purchases from "react-native-purchases";
 import { supabase } from "../Services/supabase";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
 Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
@@ -28,17 +29,101 @@ const { width, height } = Dimensions.get("window");
 // Update this to your actual backend URL
 const API_URL = "https://parlaypal.onrender.com";
 
+// Floating decorative elements component
+const FloatingElements = () => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 8000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  return (
+    <View style={styles.floatingElements}>
+      <Animated.View
+        style={[
+          styles.floatingDot,
+          {
+            top: "15%",
+            left: "10%",
+            backgroundColor: "#54FF00",
+            transform: [
+              {
+                translateY: animatedValue.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 20],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.floatingDot,
+          {
+            top: "65%",
+            right: "15%",
+            backgroundColor: "rgba(84, 255, 0, 0.6)",
+            transform: [
+              {
+                translateY: animatedValue.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.floatingDot,
+          {
+            top: "40%",
+            left: "85%",
+            backgroundColor: "rgba(84, 255, 0, 0.3)",
+            width: 6,
+            height: 6,
+            transform: [
+              {
+                translateY: animatedValue.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -15],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+    </View>
+  );
+};
+
+// Glassmorphism Card Component
+const GlassCard = ({ children, style, ...props }) => (
+  <View style={[styles.glassCard, style]} {...props}>
+    {children}
+  </View>
+);
+
 // Inline Splash Screen Component
 const SplashScreen = ({ onFinish }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Start animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 800,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
@@ -49,21 +134,35 @@ const SplashScreen = ({ onFinish }) => {
       }),
     ]).start();
 
-    // Hide splash after 2.5s
+    // Glow animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Hide splash after 3s
     const timer = setTimeout(() => {
-      // Fade out
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 100,
-        delay: 100,
+        duration: 300,
         useNativeDriver: true,
       }).start(() => {
         if (onFinish) onFinish();
       });
-    }, 2500);
+    }, 3000);
 
     return () => clearTimeout(timer);
-  }, [fadeAnim, scaleAnim, onFinish]);
+  }, [fadeAnim, scaleAnim, glowAnim, onFinish]);
 
   return (
     <Animated.View
@@ -74,6 +173,7 @@ const SplashScreen = ({ onFinish }) => {
         },
       ]}
     >
+      <FloatingElements />
       <Animated.View
         style={[
           styles.splashLogoContainer,
@@ -82,32 +182,60 @@ const SplashScreen = ({ onFinish }) => {
           },
         ]}
       >
-        <Image
-          source={require("../assets/Activity.png")}
-          style={styles.splashLogoImage}
-        />
-        {/* Glow effect around logo */}
+        {/* Animated glow effect */}
         <Animated.View
           style={[
             styles.logoGlow,
             {
-              opacity: fadeAnim.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0.5, 0.8, 0.5],
+              opacity: glowAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.3, 0.8],
               }),
               transform: [
                 {
-                  scale: fadeAnim.interpolate({
-                    inputRange: [0, 0.5, 1],
-                    outputRange: [1, 1.1, 1],
+                  scale: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.2],
                   }),
                 },
               ],
             },
           ]}
         />
+        <Image
+          source={require("../assets/Activity.png")}
+          style={styles.splashLogoImage}
+        />
         <Text style={styles.splashAppTitle}>Parlay Pal</Text>
         <Text style={styles.splashAppTagline}>AI-Powered Bet Analysis</Text>
+
+        {/* Loading indicator */}
+        <View style={styles.splashLoader}>
+          <View style={styles.loaderDots}>
+            {[0, 1, 2].map((i) => (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.loaderDot,
+                  {
+                    transform: [
+                      {
+                        scale: glowAnim.interpolate({
+                          inputRange: [0, 0.5, 1],
+                          outputRange: [0.8, 1.2, 0.8],
+                        }),
+                      },
+                    ],
+                    opacity: glowAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.5, 1, 0.5],
+                    }),
+                  },
+                ]}
+              />
+            ))}
+          </View>
+        </View>
       </Animated.View>
     </Animated.View>
   );
@@ -116,9 +244,7 @@ const SplashScreen = ({ onFinish }) => {
 export default function Home({ navigation }) {
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
-  // Unified state for all parlay data
   const [analysisResponse, setAnalysisResponse] = useState(null);
-
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [products, setProducts] = useState([]);
@@ -127,7 +253,7 @@ export default function Home({ navigation }) {
 
   // Animation values for the analysis panel
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   // Handle splash screen finish
   const handleSplashFinish = () => {
@@ -141,7 +267,8 @@ export default function Home({ navigation }) {
         const customerInfo = await Purchases.getCustomerInfo();
         const userId = customerInfo.originalAppUserId;
 
-        // Check for active subscriptions
+        console.log("userId", userId);
+
         if (
           customerInfo.activeSubscriptions &&
           customerInfo.activeSubscriptions.length > 0
@@ -153,7 +280,6 @@ export default function Home({ navigation }) {
           setIsSubscribed(false);
         }
 
-        // Fetch available products
         const offerings = await Purchases.getOfferings();
         if (
           offerings.current !== null &&
@@ -173,16 +299,17 @@ export default function Home({ navigation }) {
   useEffect(() => {
     if (analysisResponse) {
       fadeAnim.setValue(0);
-      slideAnim.setValue(20);
+      slideAnim.setValue(30);
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 800,
+          duration: 1000,
           useNativeDriver: true,
         }),
-        Animated.timing(slideAnim, {
+        Animated.spring(slideAnim, {
           toValue: 0,
-          duration: 600,
+          friction: 8,
+          tension: 40,
           useNativeDriver: true,
         }),
       ]).start();
@@ -209,7 +336,6 @@ export default function Home({ navigation }) {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
-      // Reset analysis
       setAnalysisResponse(null);
     }
   };
@@ -241,7 +367,6 @@ export default function Home({ navigation }) {
       return;
     }
 
-    // Navigate to the Showcase screen if user is not subscribed
     if (!isSubscribed) {
       navigation.navigate("Offer");
       return;
@@ -269,14 +394,9 @@ export default function Home({ navigation }) {
 
       const responseData = await response.json();
 
-      // console.log("responseData", responseData);
-
       if (response.ok) {
-        // Instead of storing slipInfo and advancedAnalysis separately,
-        // let's merge them into one final object for the UI.
         let mergedData = {};
 
-        // If slipInfo exists, parse or store it:
         if (responseData.slipInfo) {
           if (
             typeof responseData.slipInfo === "string" &&
@@ -296,7 +416,6 @@ export default function Home({ navigation }) {
           }
         }
 
-        // Process advancedAnalysis
         let parsedAnalysis = responseData.advancedAnalysis;
         if (typeof parsedAnalysis === "string") {
           const cleanedString = stripMarkdownCodeFence(parsedAnalysis);
@@ -310,15 +429,11 @@ export default function Home({ navigation }) {
           parsedAnalysis = {};
         }
 
-        // Merge slipInfo and advancedAnalysis together
         mergedData = { ...mergedData, ...parsedAnalysis };
 
         console.log("mergedData", mergedData);
 
-        // Now we have one unified object
         setAnalysisResponse(mergedData);
-
-        // Scroll to top
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       } else {
         Alert.alert(
@@ -346,63 +461,75 @@ export default function Home({ navigation }) {
     setAnalysisResponse(null);
   };
 
-  // Probability bar for entire parlay
+  // Enhanced probability indicator with glassmorphism
   const renderProbabilityIndicator = (probability) => {
     if (probability === undefined || probability === null) return null;
 
-    let color = "#FF4D4F"; // Red
+    let color = "#FF4D4F";
     let message = "High Risk";
+    let gradientColors = ["#FF4D4F", "#FF7875"];
 
     if (probability > 30) {
-      color = "#FAAD14"; // Orange
+      color = "#FAAD14";
       message = "Medium Risk";
+      gradientColors = ["#FAAD14", "#FFC53D"];
     }
     if (probability > 60) {
-      color = "#52C41A"; // Green
-      message = "Lower Risk";
+      color = "#54FF00";
+      message = "Good Odds";
+      gradientColors = ["#54FF00", "#73FF33"];
     }
 
     return (
       <View style={styles.probabilityIndicator}>
-        <View style={[styles.indicatorBar, { backgroundColor: "#1C1C1E" }]}>
-          <View
-            style={[
-              styles.indicatorFill,
-              {
-                width: `${Math.min(probability, 100)}%`,
-                backgroundColor: color,
-              },
-            ]}
-          />
+        <View style={styles.probabilityHeader}>
+          <Text style={styles.probabilityValue}>{probability.toFixed(1)}%</Text>
+          <Text style={[styles.probabilityMessage, { color }]}>{message}</Text>
         </View>
-        <View style={styles.indicatorLabels}>
-          <Text style={styles.indicatorValue}>{probability.toFixed(2)}%</Text>
-          <Text style={[styles.indicatorText, { color }]}>{message}</Text>
+
+        <View style={styles.indicatorBarContainer}>
+          <View style={styles.indicatorBar}>
+            <LinearGradient
+              colors={gradientColors}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                styles.indicatorFill,
+                { width: `${Math.min(probability, 100)}%` },
+              ]}
+            />
+          </View>
         </View>
       </View>
     );
   };
 
-  // Probability bar for individual bets
+  // Enhanced bet probability with micro-animations
   const renderBetProbability = (probability) => {
     if (probability === undefined || probability === null) return null;
 
     let color = "#FF4D4F";
-    if (probability > 30) color = "#FAAD14";
-    if (probability > 60) color = "#52C41A";
+    let gradientColors = ["#FF4D4F", "#FF7875"];
+
+    if (probability > 30) {
+      color = "#FAAD14";
+      gradientColors = ["#FAAD14", "#FFC53D"];
+    }
+    if (probability > 60) {
+      color = "#54FF00";
+      gradientColors = ["#54FF00", "#73FF33"];
+    }
 
     return (
       <View style={styles.betProbabilityContainer}>
-        <View
-          style={[styles.betProbabilityBar, { backgroundColor: "#1C1C1E" }]}
-        >
-          <View
+        <View style={styles.betProbabilityBar}>
+          <LinearGradient
+            colors={gradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={[
               styles.betProbabilityFill,
-              {
-                width: `${Math.min(probability, 100)}%`,
-                backgroundColor: color,
-              },
+              { width: `${Math.min(probability, 100)}%` },
             ]}
           />
         </View>
@@ -413,11 +540,10 @@ export default function Home({ navigation }) {
     );
   };
 
-  // Render the unified parlay analysis
+  // Enhanced parlay analysis with glassmorphism
   const renderParlayAnalysis = () => {
     if (!analysisResponse) return null;
 
-    // Destructure fields from analysisResponse
     const {
       stake,
       parlay_odds,
@@ -437,203 +563,173 @@ export default function Home({ navigation }) {
           },
         ]}
       >
-        {/* Header */}
-        <View style={styles.slipInfoHeader}>
-          <Text style={styles.slipInfoTitle}>Bet Analysis</Text>
-          <TouchableOpacity
-            style={styles.newAnalysisButton}
-            onPress={resetAnalysis}
-          >
-            <Text style={styles.newAnalysisText}>New Analysis</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Summary Card with stake, odds, probability */}
-        <View style={styles.summaryCard}>
-          <View style={styles.probabilitySection}>
-            <Text style={styles.probabilityLabel}>Win Probability</Text>
-            {renderProbabilityIndicator(parlay_probability)}
-
+        {/* Header with glassmorphism */}
+        {/* <GlassCard style={styles.analysisHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <MaterialCommunityIcons
+                name="chart-line"
+                size={24}
+                color="#54FF00"
+              />
+              <Text style={styles.slipInfoTitle}>Bet Analysis</Text>
+            </View>
             <TouchableOpacity
-              style={styles.clearButton}
+              style={styles.newAnalysisButton}
               onPress={resetAnalysis}
             >
-              <Text style={styles.clearButtonText}>Remove Slip</Text>
+              <Ionicons name="refresh" size={16} color="#54FF00" />
+              <Text style={styles.newAnalysisText}>New Analysis</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </GlassCard> */}
 
-        {/* AI Insight Card */}
-        {/* <View style={styles.insightCard}>
-          <View style={styles.insightHeader}>
-            <MaterialCommunityIcons name="robot" size={20} color="#7789FF" />
-            <Text style={styles.insightTitle}>AI Insight</Text>
-          </View>
+        {/* Probability Card with enhanced glassmorphism */}
+        <GlassCard style={styles.probabilityCard}>
+          <Text style={styles.probabilityCardTitle}>Win Probability</Text>
+          {renderProbabilityIndicator(parlay_probability)}
 
-          {parlay_summary?.expected_outcome && (
-            <Text style={styles.insightText}>
-              {parlay_summary.expected_outcome}
-            </Text>
-          )}
-          {parlay_summary?.risk_assessment && (
-            <Text style={styles.insightText}>
-              {parlay_summary.risk_assessment}
-            </Text>
-          )}
-          {parlay_summary?.alternative_suggestions?.map((item, idx) => (
-            <Text style={styles.insightText} key={`alt-${idx}`}>
-              - {item}
-            </Text>
-          ))}
-        </View> */}
+          <TouchableOpacity style={styles.clearButton} onPress={resetAnalysis}>
+            <Ionicons name="trash-outline" size={18} color="#FF4D4F" />
+            <Text style={styles.clearButtonText}>Remove Slip</Text>
+          </TouchableOpacity>
+        </GlassCard>
 
-        {/* Bet Details (Leagues, Bets) */}
+        {/* Bet Details Section */}
         <Text style={styles.sectionTitle}>Bet Details</Text>
+
         {leagues &&
           leagues.map((league, idx) => (
-            <View key={`league-${idx}`} style={styles.leagueContainer}>
+            <GlassCard key={`league-${idx}`} style={styles.leagueCard}>
               <View style={styles.leagueHeader}>
-                <MaterialCommunityIcons
-                  name={
-                    league.league?.toLowerCase().includes("nba")
-                      ? "basketball"
-                      : league.league?.toLowerCase().includes("nfl")
-                      ? "football"
-                      : league.league?.toLowerCase().includes("mlb")
-                      ? "baseball"
-                      : "trophy"
-                  }
-                  size={18}
-                  color="white"
-                />
+                <View style={styles.leagueIconContainer}>
+                  <MaterialCommunityIcons
+                    name={
+                      league.league?.toLowerCase().includes("nba")
+                        ? "basketball"
+                        : league.league?.toLowerCase().includes("nfl")
+                        ? "football"
+                        : league.league?.toLowerCase().includes("mlb")
+                        ? "baseball"
+                        : "trophy"
+                    }
+                    size={20}
+                    color="#54FF00"
+                  />
+                </View>
                 <Text style={styles.leagueTitle}>{league.league}</Text>
               </View>
 
               {league.parlay_bets &&
-                league.parlay_bets.map((bet, betIdx) => {
-                  // Debug: log each bet object
-                  console.log("Rendering parlay_bet:", bet);
-                  return (
-                    <View key={`bet-${betIdx}`} style={styles.betContainer}>
-                      {/* Bet Header: detail & odds */}
-                      <View style={styles.betHeader}>
-                        <Text style={styles.betDetail}>
-                          {bet.detail || "N/A"}
+                league.parlay_bets.map((bet, betIdx) => (
+                  <View key={`bet-${betIdx}`} style={styles.betContainer}>
+                    {/* Bet Header */}
+                    <View style={styles.betHeader}>
+                      <Text style={styles.betDetail}>
+                        {bet.detail || "N/A"}
+                      </Text>
+                      <View style={styles.oddsTag}>
+                        <Text style={styles.oddsText}>
+                          {bet.odds && bet.odds > 0 ? `+${bet.odds}` : bet.odds}
                         </Text>
-                        <View style={styles.oddsTag}>
-                          <Text style={styles.oddsText}>
-                            {bet.odds && bet.odds > 0
-                              ? `+${bet.odds}`
-                              : bet.odds}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Bet Info Row (Teams, etc.) */}
-                      {bet.teams && (
-                        <View style={styles.betInfoRow}>
-                          <Text style={styles.betInfoKey}>Teams:</Text>
-                          <Text style={styles.betInfoValue}>
-                            {bet.teams.join(" vs ")}
-                          </Text>
-                        </View>
-                      )}
-
-                      {/* Probability bar for this bet */}
-                      {bet.probability !== undefined &&
-                        renderBetProbability(bet.probability)}
-
-                      {/* Modern Insights Card */}
-                      <View style={styles.insightsCard}>
-                        {/* Cover Rate */}
-                        <View style={styles.insightRow}>
-                          <Ionicons
-                            name="trending-up"
-                            size={20}
-                            color="white"
-                            style={styles.insightIcon}
-                          />
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={[styles.insightTitle, { color: "white" }]}
-                            >
-                              Cover Rate:
-                            </Text>
-                            <Text style={styles.insightText}>
-                              {bet.cover_analysis && bet.cover_analysis.key_stat
-                                ? bet.cover_analysis.key_stat
-                                : "No cover data"}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.insightDivider} />
-                        {/* Interesting Insight */}
-                        <View style={styles.insightRow}>
-                          <Ionicons
-                            name="sparkles-outline"
-                            size={20}
-                            color="white"
-                            style={styles.insightIcon}
-                          />
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={[styles.insightTitle, { color: "white" }]}
-                            >
-                              Interesting Insight:
-                            </Text>
-                            <Text style={styles.insightText}>
-                              {bet.analysis && bet.analysis.key_stat
-                                ? bet.analysis.key_stat
-                                : "No insight"}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.insightDivider} />
-                        {/* Matchup Insight */}
-                        <View style={styles.insightRow}>
-                          <Ionicons
-                            name="people-outline"
-                            size={20}
-                            color="white"
-                            style={styles.insightIcon}
-                          />
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={[styles.insightTitle, { color: "white" }]}
-                            >
-                              Matchup Insight:
-                            </Text>
-                            <Text style={styles.insightText}>
-                              {bet.analysis &&
-                              bet.analysis.matchup_consideration
-                                ? bet.analysis.matchup_consideration
-                                : "No matchup info"}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-
-                      {/* Footer (Bet Type, etc.) */}
-                      <View style={styles.betFooter}>
-                        <View style={styles.betTypeTag}>
-                          <Text style={styles.betTypeText}>
-                            {bet.bet_type || "N/A"}
-                          </Text>
-                        </View>
                       </View>
                     </View>
-                  );
-                })}
-            </View>
+
+                    {/* Teams Info */}
+                    {bet.teams && (
+                      <View style={styles.betInfoRow}>
+                        <Ionicons name="people" size={16} color="#54FF00" />
+                        <Text style={styles.betInfoValue}>
+                          {bet.teams.join(" vs ")}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Probability */}
+                    {bet.probability !== undefined &&
+                      renderBetProbability(bet.probability)}
+
+                    {/* Enhanced Insights Card */}
+                    <GlassCard style={styles.insightsCard}>
+                      {/* Cover Rate */}
+                      <View style={styles.insightRow}>
+                        <View style={styles.insightIconContainer}>
+                          <Ionicons
+                            name="trending-up"
+                            size={18}
+                            color="#54FF00"
+                          />
+                        </View>
+                        <View style={styles.insightContent}>
+                          <Text style={styles.insightLabel}>Cover Rate</Text>
+                          <Text style={styles.insightText}>
+                            {bet.cover_analysis && bet.cover_analysis.key_stat
+                              ? bet.cover_analysis.key_stat
+                              : "No cover data available"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.insightDivider} />
+
+                      {/* Key Insight */}
+                      <View style={styles.insightRow}>
+                        <View style={styles.insightIconContainer}>
+                          <Ionicons name="bulb" size={18} color="#54FF00" />
+                        </View>
+                        <View style={styles.insightContent}>
+                          <Text style={styles.insightLabel}>Key Insight</Text>
+                          <Text style={styles.insightText}>
+                            {bet.analysis && bet.analysis.key_stat
+                              ? bet.analysis.key_stat
+                              : "No insight available"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.insightDivider} />
+
+                      {/* Matchup Info */}
+                      <View style={styles.insightRow}>
+                        <View style={styles.insightIconContainer}>
+                          <Ionicons
+                            name="analytics"
+                            size={18}
+                            color="#54FF00"
+                          />
+                        </View>
+                        <View style={styles.insightContent}>
+                          <Text style={styles.insightLabel}>Matchup</Text>
+                          <Text style={styles.insightText}>
+                            {bet.analysis && bet.analysis.matchup_consideration
+                              ? bet.analysis.matchup_consideration
+                              : "No matchup info available"}
+                          </Text>
+                        </View>
+                      </View>
+                    </GlassCard>
+
+                    {/* Bet Type Footer */}
+                    <View style={styles.betFooter}>
+                      <View style={styles.betTypeTag}>
+                        <Text style={styles.betTypeText}>
+                          {bet.bet_type || "N/A"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+            </GlassCard>
           ))}
 
-        {/* Responsible Betting Reminder */}
+        {/* Responsible Betting */}
         {responsible_betting_reminder && (
-          <View style={styles.disclaimer}>
+          <GlassCard style={styles.disclaimer}>
+            <Ionicons name="information-circle" size={20} color="#54FF00" />
             <Text style={styles.disclaimerText}>
               {responsible_betting_reminder}
             </Text>
-          </View>
+          </GlassCard>
         )}
       </Animated.View>
     );
@@ -646,12 +742,17 @@ export default function Home({ navigation }) {
         <SplashScreen onFinish={handleSplashFinish} />
       ) : (
         <>
-          <View style={styles.header}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Image
-                source={require("../assets/Activity.png")}
-                style={{ width: 30, height: 30, marginRight: 15 }}
-              />
+          <FloatingElements />
+
+          {/* Enhanced Header */}
+          <GlassCard style={styles.header}>
+            <View style={styles.headerLeft}>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require("../assets/Activity.png")}
+                  style={styles.logoImage}
+                />
+              </View>
               <View>
                 <Text style={styles.appTitle}>Parlay Pal</Text>
                 <Text style={styles.appTagline}>AI-Powered Bet Analysis</Text>
@@ -661,9 +762,9 @@ export default function Home({ navigation }) {
               style={styles.profileButton}
               onPress={() => navigation.navigate("Profile")}
             >
-              <Ionicons name="person-circle" size={32} color="#F4F4F4" />
+              <Ionicons name="person-circle" size={28} color="#54FF00" />
             </TouchableOpacity>
-          </View>
+          </GlassCard>
 
           <ScrollView
             ref={scrollViewRef}
@@ -672,46 +773,68 @@ export default function Home({ navigation }) {
             showsVerticalScrollIndicator={false}
           >
             {!image ? (
-              // If no image yet, show upload card
+              // Enhanced Upload Section
               <View style={styles.uploadSection}>
-                <View style={styles.uploadCard}>
+                <GlassCard style={styles.uploadCard}>
                   <View style={styles.uploadIconContainer}>
-                    <Ionicons
-                      name="cloud-upload-outline"
-                      size={50}
-                      color="white"
-                    />
+                    <LinearGradient
+                      colors={["#54FF00", "#73FF33"]}
+                      style={styles.uploadIconGradient}
+                    >
+                      <Ionicons
+                        name="cloud-upload-outline"
+                        size={32}
+                        color="#101113"
+                      />
+                    </LinearGradient>
                   </View>
+
                   <Text style={styles.uploadTitle}>Upload Your Bet Slip</Text>
                   <Text style={styles.uploadDescription}>
-                    Select an image of your bet slip for AI analysis
+                    Select an image of your bet slip for AI-powered analysis
                   </Text>
 
-                  <View style={styles.uploadButtons}>
-                    <TouchableOpacity
-                      style={[styles.uploadButton, styles.galleryButton]}
-                      onPress={pickImage}
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={pickImage}
+                  >
+                    <LinearGradient
+                      colors={["#54FF00", "#73FF33"]}
+                      style={styles.uploadButtonGradient}
                     >
-                      <Ionicons name="images-outline" size={24} color="#fff" />
-                      <Text style={styles.uploadButtonText}>Gallery</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                      <Ionicons
+                        name="images-outline"
+                        size={20}
+                        color="#101113"
+                      />
+                      <Text style={styles.uploadButtonText}>
+                        Choose from Gallery
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </GlassCard>
               </View>
             ) : null}
 
-            {/* If image is chosen and there are NO bet details, show preview and analyze/clear buttons */}
+            {/* Enhanced Image Preview */}
             {image && !(analysisResponse?.leagues?.length > 0) && (
               <View style={styles.analysisSection}>
-                <View style={styles.imageContainer}>
+                <GlassCard style={styles.imageContainer}>
                   <Image
                     source={{ uri: image }}
                     style={styles.previewImage}
                     resizeMode="contain"
                   />
-                </View>
+                  <View style={styles.imageOverlay}>
+                    <TouchableOpacity
+                      style={styles.changeImageButton}
+                      onPress={pickImage}
+                    >
+                      <Ionicons name="camera" size={18} color="#54FF00" />
+                    </TouchableOpacity>
+                  </View>
+                </GlassCard>
 
-                {/* Only show "Analyze" if we haven't gotten analysisResponse yet */}
                 {!analysisResponse && (
                   <>
                     <TouchableOpacity
@@ -722,59 +845,76 @@ export default function Home({ navigation }) {
                       onPress={uploadImage}
                       disabled={uploading}
                     >
-                      {uploading ? (
-                        <View style={styles.loadingContainer}>
-                          <ActivityIndicator color="#ffffff" size="small" />
-                          <Text style={styles.loadingText}>
-                            Analyzing slip...{"\n"}
-                            <Text style={styles.loadingSubText}>
-                              More legs = longer processing time
+                      <LinearGradient
+                        colors={
+                          uploading
+                            ? ["#1A181B", "#1A181B"]
+                            : ["#54FF00", "#73FF33"]
+                        }
+                        style={styles.analyzeButtonGradient}
+                      >
+                        {uploading ? (
+                          <View style={styles.loadingContainer}>
+                            <ActivityIndicator color="#54FF00" size="small" />
+                            <Text style={styles.loadingText}>
+                              Analyzing slip...
                             </Text>
-                          </Text>
-                        </View>
-                      ) : (
-                        <>
-                          <MaterialCommunityIcons
-                            name="lightning-bolt"
-                            size={22}
-                            color="#30E88D"
-                          />
-                          <Text style={styles.buttonText}>
-                            Analyze Bet Slip
-                          </Text>
-                        </>
-                      )}
+                          </View>
+                        ) : (
+                          <>
+                            <MaterialCommunityIcons
+                              name="lightning-bolt"
+                              size={20}
+                              color="#101113"
+                            />
+                            <Text style={styles.analyzeButtonText}>
+                              Analyze Bet Slip
+                            </Text>
+                          </>
+                        )}
+                      </LinearGradient>
                     </TouchableOpacity>
-                    {/* Clear button under Analyze Bet Slip button */}
+
                     <TouchableOpacity
-                      style={styles.clearButton}
+                      style={styles.secondaryButton}
                       onPress={resetAnalysis}
                     >
-                      <Text style={styles.clearButtonText}>Remove Slip</Text>
+                      <Text style={styles.secondaryButtonText}>
+                        Remove Slip
+                      </Text>
                     </TouchableOpacity>
                   </>
                 )}
-                {/* Clear button removed from here */}
               </View>
             )}
 
-            {/* Render the unified analysis data */}
+            {/* Render Analysis */}
             {renderParlayAnalysis()}
           </ScrollView>
 
-          {/* Uploading Modal */}
-          <Modal visible={uploading} transparent animationType="slide">
+          {/* Enhanced Loading Modal */}
+          <Modal visible={uploading} transparent animationType="fade">
             <View style={styles.modalContainer}>
-              <LottieView
-                source={require("../assets/scanning.json")}
-                autoPlay
-                loop
-                style={styles.lottie}
-              />
-              <Text style={styles.modalText}>Scanning your bet slip...</Text>
-              <Text style={styles.modalDisclaimerText}>
-                Analysis may take longer for parlays with more legs.
-              </Text>
+              <GlassCard style={styles.modalContent}>
+                <LottieView
+                  source={require("../assets/greenScanning.json")}
+                  autoPlay
+                  loop
+                  style={styles.lottie}
+                />
+                <Text style={styles.modalText}>Scanning your bet slip...</Text>
+                <Text style={styles.modalSubText}>
+                  Analysis may take longer for parlays with more legs.
+                </Text>
+
+                <View style={styles.modalLoader}>
+                  <View style={styles.loaderDots}>
+                    {[0, 1, 2].map((i) => (
+                      <View key={i} style={styles.loaderDot} />
+                    ))}
+                  </View>
+                </View>
+              </GlassCard>
             </View>
           </Modal>
         </>
@@ -786,8 +926,38 @@ export default function Home({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#101113",
   },
+
+  // Floating Elements
+  floatingElements: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    zIndex: 0,
+  },
+  floatingDot: {
+    position: "absolute",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#54FF00",
+    opacity: 0.6,
+  },
+
+  // Glassmorphism Card
+  glassCard: {
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    backdropFilter: "blur(10px)",
+  },
+
   // Splash Screen Styles
   splashContainer: {
     position: "absolute",
@@ -795,7 +965,7 @@ const styles = StyleSheet.create({
     height: height,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#101113",
     zIndex: 1000,
   },
   splashLogoContainer: {
@@ -805,40 +975,100 @@ const styles = StyleSheet.create({
   splashLogoImage: {
     width: 80,
     height: 80,
-    marginBottom: 20,
+    marginBottom: 24,
+    zIndex: 2,
   },
   logoGlow: {
     position: "absolute",
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(48, 232, 141, 0.10)",
-    top: -10,
-    left: -10,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(84, 255, 0, 0.2)",
+    top: -20,
+    left: -20,
+    zIndex: 1,
   },
   splashAppTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
+    fontSize: 36,
+    fontWeight: "800",
+    color: "#ffffff",
     marginBottom: 8,
-    fontFamily: "Inter, System",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    textAlign: "center",
   },
   splashAppTagline: {
     fontSize: 16,
-    color: "#30E88D",
-    fontFamily: "Inter, System",
-    letterSpacing: 0.2,
+    color: "#54FF00",
+    letterSpacing: 0.5,
+    textAlign: "center",
+    marginBottom: 40,
   },
-  // Main App Styles
+  splashLoader: {
+    marginTop: 40,
+  },
+  loaderDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loaderDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#54FF00",
+    marginHorizontal: 4,
+    opacity: 0.6,
+  },
+
+  // Header Styles
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.04)",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    zIndex: 10,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  logoContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(84, 255, 0, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.2)",
+  },
+  logoImage: {
+    width: 24,
+    height: 24,
+  },
+  appTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#ffffff",
+    letterSpacing: 0.5,
+  },
+  appTagline: {
+    fontSize: 13,
+    color: "#54FF00",
+    marginTop: 2,
+    letterSpacing: 0.3,
   },
   profileButton: {
     width: 44,
@@ -846,554 +1076,480 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#18181B",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: "rgba(84, 255, 0, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.2)",
   },
-  appTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    fontFamily: "Inter, System",
-    letterSpacing: 0.5,
-  },
-  appTagline: {
-    fontSize: 13,
-    color: "#30E88D",
-    marginTop: 2,
-    fontFamily: "Inter, System",
-    letterSpacing: 0.2,
-  },
+
+  // Scroll View
   scrollView: {
     flex: 1,
+    zIndex: 1,
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
+
+  // Upload Section
   uploadSection: {
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 400,
+    minHeight: 500,
+    marginTop: 40,
   },
   uploadCard: {
     width: "100%",
-    borderRadius: 24,
-    padding: 36,
+    padding: 40,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#18181B",
-    backgroundColor: "#18181B",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
   },
   uploadIconContainer: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: "#101113",
+    marginBottom: 32,
+  },
+  uploadIconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 22,
   },
   uploadTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 12,
-    fontFamily: "Inter, System",
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 16,
+    textAlign: "center",
     letterSpacing: 0.5,
   },
   uploadDescription: {
-    fontSize: 15,
-    color: "#8A94B0",
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.7)",
     textAlign: "center",
-    marginBottom: 32,
-    fontFamily: "Inter, System",
-    letterSpacing: 0.1,
-  },
-  uploadButtons: {
-    flexDirection: "row",
-    width: "100%",
-    justifyContent: "space-between",
+    marginBottom: 40,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
   uploadButton: {
+    width: "100%",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  uploadButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 18,
-    borderRadius: 14,
-    flex: 1,
-    backgroundColor: "#18181B",
-    marginHorizontal: 4,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
   },
   uploadButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    marginLeft: 10,
-    fontFamily: "Inter, System",
+    color: "#101113",
+    fontWeight: "700",
+    marginLeft: 12,
     fontSize: 16,
+    letterSpacing: 0.3,
   },
-  galleryButton: {
-    backgroundColor: "#101113",
-    marginLeft: 8,
-  },
+
+  // Analysis Section
   analysisSection: {
     marginBottom: 20,
   },
   imageContainer: {
     width: "100%",
-    borderRadius: 18,
+    borderRadius: 20,
     overflow: "hidden",
     position: "relative",
-    marginBottom: 18,
-    backgroundColor: "#18181B",
-    borderWidth: 1,
-    borderColor: "#232323",
+    marginBottom: 24,
+    padding: 0,
   },
   previewImage: {
     width: "100%",
     height: undefined,
     aspectRatio: 4 / 3,
-    borderRadius: 18,
+    borderRadius: 20,
+  },
+  imageOverlay: {
+    position: "absolute",
+    top: 16,
+    right: 16,
   },
   changeImageButton: {
-    position: "absolute",
-    bottom: 12,
-    right: 12,
-    backgroundColor: "rgba(0,0,0,0.6)",
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: "center",
+    backgroundColor: "rgba(26, 24, 27, 0.9)",
     justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.3)",
   },
   analyzeButton: {
-    backgroundColor: "black",
-    padding: 18,
-    borderRadius: 14,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 16,
+  },
+  analyzeButtonGradient: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    width: "100%",
-    marginBottom: 12,
-    shadowColor: "#30E88D",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    paddingVertical: 18,
+    paddingHorizontal: 32,
   },
   analyzeButtonDisabled: {
-    backgroundColor: "#1A1A1A",
+    opacity: 0.6,
   },
-  buttonText: {
-    color: "#30E88D",
+  analyzeButtonText: {
+    color: "#101113",
     fontSize: 17,
-    fontWeight: "bold",
+    fontWeight: "700",
     marginLeft: 10,
-    fontFamily: "Inter, System",
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   loadingContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   loadingText: {
-    color: "#fff",
-    marginLeft: 10,
+    color: "#54FF00",
+    marginLeft: 12,
     fontWeight: "600",
-    fontFamily: "Inter, System",
+    fontSize: 16,
   },
-  loadingSubText: {
-    fontSize: 13,
-    color: "#8A94B0",
-    marginTop: 4,
-    fontFamily: "Inter, System",
-  },
-  clearButton: {
-    backgroundColor: "#101113",
-    padding: 14,
-    borderRadius: 14,
-    marginTop: 15,
+  secondaryButton: {
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
+    padding: 18,
+    borderRadius: 16,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#232323",
-    shadowColor: "red",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: "rgba(255, 77, 79, 0.3)",
   },
-  clearButtonText: {
-    color: "red",
+  secondaryButtonText: {
+    color: "#FF4D4F",
     fontSize: 16,
-    fontWeight: "bold",
-    fontFamily: "Inter, System",
-    letterSpacing: 0.2,
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
+
+  // Analysis Results
   slipInfoWrapper: {
-    marginTop: 28,
+    marginTop: 32,
     width: "100%",
   },
-  slipInfoHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 18,
+  analysisHeader: {
+    marginBottom: 20,
+    padding: 20,
+  },
+  probabilityCard: {
+    padding: 24,
+    marginBottom: 24,
     bottom: 15,
   },
-  slipInfoTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    fontFamily: "Inter, System",
-    letterSpacing: 0.5,
-  },
-  newAnalysisButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 22,
-    backgroundColor: "#18181B",
-    borderWidth: 1,
-    borderColor: "#232323",
-  },
-  newAnalysisText: {
-    color: "#30E88D",
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: "Inter, System",
-    letterSpacing: 0.2,
-  },
-  summaryCard: {
-    backgroundColor: "#18181B",
-    borderRadius: 20,
-    padding: 22,
-    marginBottom: 18,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    borderWidth: 1,
-    borderColor: "#232323",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: "rgba(255,255,255,0.07)",
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: "#8A94B0",
-    marginBottom: 10,
-    fontFamily: "Inter, System",
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    fontFamily: "Inter, System",
-  },
-  probabilitySection: {
-    borderTopColor: "rgba(255,255,255,0.04)",
-    paddingTop: 18,
-  },
-  probabilityLabel: {
+  probabilityCardTitle: {
     fontSize: 20,
     fontWeight: "700",
-    bottom: 20,
-    color: "white",
-    marginBottom: 14,
-    fontFamily: "Inter, System",
+    color: "#ffffff",
+    marginBottom: 20,
+    textAlign: "center",
+    letterSpacing: 0.5,
   },
   probabilityIndicator: {
     width: "100%",
-    marginBottom: 8,
+    marginBottom: 24,
+  },
+  probabilityHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  probabilityValue: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#ffffff",
+    letterSpacing: 0.5,
+  },
+  probabilityMessage: {
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  indicatorBarContainer: {
+    width: "100%",
   },
   indicatorBar: {
-    height: 10,
-    borderRadius: 5,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     overflow: "hidden",
-    marginBottom: 10,
-    backgroundColor: "#232323",
   },
   indicatorFill: {
     height: "100%",
-    borderRadius: 5,
+    borderRadius: 6,
   },
-  indicatorLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  indicatorValue: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontFamily: "Inter, System",
-  },
-  indicatorText: {
-    fontWeight: "600",
-    fontFamily: "Inter, System",
-  },
-  insightCard: {
-    backgroundColor: "rgba(79, 99, 232, 0.1)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: "#4F63E8",
-  },
-  insightHeader: {
+  clearButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 77, 79, 0.1)",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 77, 79, 0.3)",
   },
-  insightTitle: {
-    fontSize: 16,
+  clearButtonText: {
+    color: "#FF4D4F",
+    fontSize: 15,
     fontWeight: "600",
-    color: "#7789FF",
     marginLeft: 8,
-  },
-  insightText: {
-    fontSize: 14,
-    color: "#B0B7C8",
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 18,
-    fontFamily: "Inter, System",
     letterSpacing: 0.3,
   },
-  leagueContainer: {
-    marginBottom: 18,
-    borderRadius: 18,
-    overflow: "hidden",
-    backgroundColor: "#18181B",
+  newAnalysisButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "rgba(84, 255, 0, 0.1)",
     borderWidth: 1,
-    borderColor: "#232323",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: "rgba(84, 255, 0, 0.3)",
+  },
+  newAnalysisText: {
+    color: "#54FF00",
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 6,
+    letterSpacing: 0.3,
+  },
+
+  // Section Titles
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 20,
+    letterSpacing: 0.5,
+  },
+  slipInfoTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: 0.5,
+    marginLeft: 10,
+  },
+
+  // League Cards
+  leagueCard: {
+    marginBottom: 20,
+    padding: 0,
+    overflow: "hidden",
   },
   leagueHeader: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.04)",
-    backgroundColor: "#101113",
+    borderBottomColor: "rgba(84, 255, 0, 0.1)",
+    backgroundColor: "rgba(16, 17, 19, 0.6)",
+  },
+  leagueIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(84, 255, 0, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.2)",
   },
   leagueTitle: {
-    color: "#fff",
-    fontWeight: "500",
-    marginLeft: 10,
-    fontFamily: "Inter, System",
+    color: "#ffffff",
+    fontWeight: "600",
     fontSize: 16,
+    letterSpacing: 0.3,
   },
+
+  // Bet Container
   betContainer: {
-    padding: 18,
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.04)",
+    borderBottomColor: "rgba(255, 255, 255, 0.05)",
   },
   betHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   betDetail: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#ffffff",
     flex: 1,
     marginRight: 12,
-    fontFamily: "Inter, System",
+    letterSpacing: 0.3,
   },
   betInfoRow: {
     flexDirection: "row",
-    marginBottom: 12,
-  },
-  betInfoKey: {
-    fontSize: 15,
-    color: "#8A94B0",
-    width: 60,
-    fontFamily: "Inter, System",
+    alignItems: "center",
+    marginBottom: 16,
   },
   betInfoValue: {
     fontSize: 15,
-    color: "#fff",
-    flex: 1,
+    color: "rgba(255, 255, 255, 0.8)",
+    marginLeft: 8,
     fontWeight: "500",
-    fontFamily: "Inter, System",
-  },
-  betFooter: {
-    flexDirection: "row",
-    marginTop: 12,
-  },
-  betTypeTag: {
-    backgroundColor: "#232323",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    marginRight: 12,
-  },
-  betTypeText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "500",
-    fontFamily: "Inter, System",
   },
   oddsTag: {
-    backgroundColor: "#232323",
+    backgroundColor: "rgba(84, 255, 0, 0.1)",
     paddingVertical: 6,
     paddingHorizontal: 14,
-    borderRadius: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.3)",
   },
   oddsText: {
-    color: "#30E88D",
+    color: "#54FF00",
     fontSize: 15,
     fontWeight: "700",
-    fontFamily: "Inter, System",
+    letterSpacing: 0.3,
   },
+
+  // Bet Probability
   betProbabilityContainer: {
-    marginVertical: 14,
+    marginVertical: 16,
     width: "100%",
   },
   betProbabilityBar: {
-    height: 8,
-    borderRadius: 4,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     overflow: "hidden",
-    marginBottom: 6,
-    backgroundColor: "#232323",
+    marginBottom: 8,
   },
   betProbabilityFill: {
     height: "100%",
-    borderRadius: 4,
+    borderRadius: 5,
   },
   betProbabilityValue: {
     fontSize: 13,
     fontWeight: "600",
     alignSelf: "flex-end",
-    color: "#30E88D",
-    fontFamily: "Inter, System",
+    letterSpacing: 0.3,
   },
-  disclaimer: {
-    marginTop: 22,
-    marginBottom: 34,
-  },
-  disclaimerText: {
-    color: "#8A94B0",
-    fontSize: 13,
-    textAlign: "center",
-    fontFamily: "Inter, System",
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(10,10,10,0.92)",
-  },
-  lottie: {
-    width: 320,
-    height: 320,
-  },
-  modalText: {
-    color: "#fff",
-    fontSize: 20,
-    marginTop: 12,
-    fontWeight: "800",
-    fontFamily: "Inter, System",
-  },
-  modalDisclaimerText: {
-    color: "#8A94B0",
-    fontSize: 15,
-    marginTop: 12,
-    textAlign: "center",
-    marginHorizontal: 24,
-    fontFamily: "Inter, System",
-  },
-  betAnalysisContainer: {
-    backgroundColor: "#101113",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 6,
-    marginBottom: 6,
-  },
-  analysisHeader: {
-    fontSize: 19,
-    fontWeight: "600",
-    color: "#fff",
-    marginBottom: 10,
-    fontFamily: "Inter, System",
-  },
-  analysisText: {
-    fontSize: 15,
-    color: "#8A94B0",
-    marginBottom: 6,
-    fontFamily: "Inter, System",
-  },
-  label: {
-    fontSize: 15,
-    color: "#fff",
-    marginBottom: 14,
-    backgroundColor: "#101113",
-    borderRadius: 8,
-    padding: 12,
-    fontFamily: "Inter, System",
-    fontWeight: "400",
-  },
+
+  // Insights Card
   insightsCard: {
-    backgroundColor: "",
-    borderRadius: 18,
-    padding: 18,
-    marginTop: 10,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "rgba(16, 17, 19, 0.6)",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#232323",
+    borderColor: "rgba(84, 255, 0, 0.1)",
   },
   insightRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  insightIcon: {
+  insightIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(84, 255, 0, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
-    marginTop: 2,
   },
-  insightTitle: {
+  insightContent: {
+    flex: 1,
+  },
+  insightLabel: {
     fontWeight: "700",
     fontSize: 14,
-    marginBottom: 2,
-    fontFamily: "Inter, System",
-    letterSpacing: 0.2,
+    color: "#54FF00",
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   insightText: {
-    color: "#fff",
-    fontSize: 15,
-    fontFamily: "Inter, System",
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: "500",
-    marginBottom: 2,
   },
   insightDivider: {
     height: 1,
-    backgroundColor: "#232323",
-    marginVertical: 8,
+    backgroundColor: "rgba(84, 255, 0, 0.1)",
+    marginVertical: 12,
     borderRadius: 1,
+  },
+
+  // Bet Footer
+  betFooter: {
+    flexDirection: "row",
+    marginTop: 16,
+  },
+  betTypeTag: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  betTypeText: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 13,
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
+
+  // Disclaimer
+  disclaimer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 24,
+    padding: 16,
+  },
+  disclaimerText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 13,
+    marginLeft: 12,
+    lineHeight: 18,
+    flex: 1,
+  },
+
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 17, 19, 0.95)",
+  },
+  modalContent: {
+    alignItems: "center",
+    padding: 40,
+    margin: 20,
+  },
+  lottie: {
+    width: 200,
+    height: 200,
+  },
+  modalText: {
+    color: "#ffffff",
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 20,
+    textAlign: "center",
+    letterSpacing: 0.5,
+  },
+  modalSubText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  modalLoader: {
+    marginTop: 24,
   },
 });

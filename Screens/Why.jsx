@@ -5,12 +5,10 @@ import {
   SafeAreaView,
   Dimensions,
   TouchableOpacity,
-  Image,
   Animated,
+  ScrollView,
 } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("window");
 
@@ -21,283 +19,152 @@ const Why = ({ route, navigation }) => {
 
   const [content, setContent] = useState([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const generatedContent = generateContent(surveyAnswers);
     setContent(generatedContent);
 
-    // Entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Simple entrance animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
   }, [surveyAnswers]);
 
   const generateContent = (answers) => {
     const betType = answers.question1;
     const researchTime = answers.question2;
-    const messages = [];
+    const features = [];
 
-    // Welcome section
-    messages.push(
-      <Animated.View
-        style={[
-          styles.welcomeSection,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-        key="intro"
-      >
-        <LinearGradient
-          colors={["rgba(119, 137, 255, 0.15)", "rgba(79, 99, 232, 0.08)"]}
-          style={styles.welcomeCard}
-        >
-          <View style={styles.iconContainer}>
-            <MaterialCommunityIcons
-              name="chart-line"
-              size={24}
-              color="#7789FF"
-            />
-          </View>
-          <Text style={styles.welcomeTitle}>7,000+ Slips Analyzed!</Text>
-          <Text style={styles.welcomeText}>
-            Our AI has processed thousands of bet slips to provide accurate
-            insights.
-          </Text>
-        </LinearGradient>
-      </Animated.View>
-    );
-
-    // Feature cards based on survey answers
+    // Core features based on survey answers
     if (betType === "Parlays") {
-      messages.push(
-        <View style={styles.featureCard} key="parlays">
-          <View style={styles.cardContent}>
-            <View
-              style={[
-                styles.smallIconContainer,
-                { backgroundColor: "rgba(82, 196, 26, 0.15)" },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="trophy-outline"
-                size={20}
-                color="#52C41A"
-              />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>Master Your Parlays</Text>
-              <Text style={styles.cardText}>
-                Comprehensive multi-leg analysis with probability calculations
-              </Text>
-            </View>
-          </View>
-        </View>
-      );
+      features.push({
+        title: "Master Your Parlays",
+        description:
+          "Comprehensive multi-leg analysis with probability calculations",
+        icon: "🏆",
+      });
     } else if (betType === "Single Bets" || betType === "Player Props") {
-      messages.push(
-        <View style={styles.featureCard} key="singlebet">
-          <LinearGradient
-            colors={["rgba(250, 173, 20, 0.12)", "rgba(250, 173, 20, 0.04)"]}
-            style={styles.cardContent}
-          >
-            <View
-              style={[
-                styles.smallIconContainer,
-                { backgroundColor: "rgba(250, 173, 20, 0.15)" },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="bullseye"
-                size={20}
-                color="#FAAD14"
-              />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>Precision Betting</Text>
-              <Text style={styles.cardText}>
-                AI-powered insights for singles and props with key matchup data
-              </Text>
-            </View>
-          </LinearGradient>
-        </View>
-      );
+      features.push({
+        title: "Precision Betting",
+        description:
+          "AI-powered insights for singles and props with key matchup data",
+        icon: "🎯",
+      });
     }
 
     if (researchTime === "I don't do research") {
-      messages.push(
-        <View style={styles.featureCard} key="noresearch">
-          <LinearGradient
-            colors={["rgba(255, 77, 79, 0.12)", "rgba(255, 77, 79, 0.04)"]}
-            style={styles.cardContent}
-          >
-            <View
-              style={[
-                styles.smallIconContainer,
-                { backgroundColor: "rgba(255, 77, 79, 0.15)" },
-              ]}
-            >
-              <Ionicons name="flash-outline" size={20} color="#FF4D4F" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>Instant Intelligence</Text>
-              <Text style={styles.cardText}>
-                Skip research. Get instant comprehensive bet slip analysis
-              </Text>
-            </View>
-          </LinearGradient>
-        </View>
-      );
+      features.push({
+        title: "Instant Intelligence",
+        description:
+          "Skip research. Get instant comprehensive bet slip analysis",
+        icon: "⚡",
+      });
     } else if (researchTime === "Less than 30 min") {
-      messages.push(
-        <View style={styles.featureCard} key="lesstime">
-          <LinearGradient
-            colors={["rgba(255, 77, 79, 0.12)", "rgba(255, 77, 79, 0.04)"]}
-            style={styles.cardContent}
-          >
-            <View
-              style={[
-                styles.smallIconContainer,
-                { backgroundColor: "rgba(255, 77, 79, 0.15)" },
-              ]}
-            >
-              <Ionicons name="timer-outline" size={20} color="#FF4D4F" />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>Quick Research Booster</Text>
-              <Text style={styles.cardText}>
-                Amplify your research with critical insights and probabilities
-              </Text>
-            </View>
-          </LinearGradient>
-        </View>
-      );
+      features.push({
+        title: "Quick Research Booster",
+        description:
+          "Amplify your research with critical insights and probabilities",
+        icon: "⏱️",
+      });
     } else if (
       researchTime.includes("hour") ||
       researchTime.includes("hours")
     ) {
-      messages.push(
-        <View style={styles.featureCard} key="moretime">
-          <LinearGradient
-            colors={["rgba(119, 137, 255, 0.12)", "rgba(119, 137, 255, 0.04)"]}
-            style={styles.cardContent}
-          >
-            <View
-              style={[
-                styles.smallIconContainer,
-                { backgroundColor: "rgba(119, 137, 255, 0.15)" },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="magnify"
-                size={20}
-                color="#7789FF"
-              />
-            </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>Research Companion</Text>
-              <Text style={styles.cardText}>
-                Enhance deep analysis with advanced metrics and validation
-              </Text>
-            </View>
-          </LinearGradient>
-        </View>
-      );
+      features.push({
+        title: "Research Companion",
+        description:
+          "Enhance deep analysis with advanced metrics and validation",
+        icon: "🔍",
+      });
     }
 
-    return messages;
+    return features;
+  };
+
+  const handleContinue = () => {
+    // Button animation
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.97,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    navigation.navigate("OfferTrial", { email, userId });
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={["#0A0E1A", "#101426", "#1A2240"]}
-        style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Background decoration */}
-        <View style={styles.backgroundDecoration}>
-          <View style={[styles.backgroundCircle, styles.bgCircle1]} />
-          <View style={[styles.backgroundCircle, styles.bgCircle2]} />
-          <View style={[styles.backgroundCircle, styles.bgCircle3]} />
-        </View>
-
         {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <View style={styles.headerRow}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require("../assets/Activity.png")}
-                style={styles.logo}
-              />
-            </View>
-            <Text style={styles.appTitle}>Parlay Pal</Text>
-          </View>
-          {/* <Text style={styles.mainHeading}>Why Parlay Pal?</Text> */}
-          <Text style={styles.subtitle}>
-            Personalized betting intelligence powered by AI
+        <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+          <Text style={styles.mainTitle}>Why Parlay Pal?</Text>
+          <Text style={styles.subtitle}>AI-Powered Bet Analysis</Text>
+        </Animated.View>
+
+        {/* Hero Stats */}
+        <Animated.View style={[styles.heroCard, { opacity: fadeAnim }]}>
+          <Text style={styles.heroNumber}>7,000+</Text>
+          <Text style={styles.heroLabel}>Slips Analyzed</Text>
+          <Text style={styles.heroDescription}>
+            Our AI has processed thousands of bet slips to provide accurate
+            insights
           </Text>
         </Animated.View>
 
-        {/* Content Area */}
-        <View style={styles.contentArea}>{content}</View>
-
-        {/* Fixed CTA at bottom */}
-        <View style={styles.ctaContainer}>
-          {/* <LinearGradient
-            colors={["#4F63E8", "#7B68EE", "#9370DB"]}
-            style={styles.ctaCard}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          > */}
-          <View style={styles.ctaContent}>
-            <TouchableOpacity
-              style={styles.ctaButton}
-              onPress={() =>
-                navigation.navigate("OfferTrial", { email, userId })
-              }
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={["#4F63E8", "#4F63E8"]}
-                style={styles.buttonGradient}
-              >
-                <Text style={styles.ctaButtonText}>
-                  Try Parlay Pal For Free
+        {/* Features List */}
+        <Animated.View
+          style={[styles.featuresContainer, { opacity: fadeAnim }]}
+        >
+          {content.map((feature, index) => (
+            <View key={index} style={styles.featureRow}>
+              <View style={styles.featureIcon}>
+                <Text style={styles.featureEmoji}>{feature.icon}</Text>
+              </View>
+              <View style={styles.featureContent}>
+                <Text style={styles.featureTitle}>{feature.title}</Text>
+                <Text style={styles.featureDescription}>
+                  {feature.description}
                 </Text>
-                <View style={styles.buttonIcon}>
-                  <Ionicons name="arrow-forward" size={18} color="white" />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </Animated.View>
+      </ScrollView>
+
+      {/* Fixed bottom section */}
+      <View style={styles.bottomSection}>
+        {/* CTA Button */}
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <TouchableOpacity
+            style={styles.ctaButton}
+            onPress={handleContinue}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.ctaButtonText}>Continue</Text>
+          </TouchableOpacity>
+          {/* Progress indicator */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressDot} />
+            <View style={styles.progressDot} />
+            <View style={styles.progressDot} />
+            <View style={[styles.progressDot, styles.progressDotActive]} />
           </View>
-          <View style={styles.ctaDecoration}>
-            <View style={[styles.floatingCircle, styles.circle1]} />
-            <View style={[styles.floatingCircle, styles.circle2]} />
-          </View>
-          {/* </LinearGradient> */}
-        </View>
-      </LinearGradient>
+        </Animated.View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -305,248 +172,185 @@ const Why = ({ route, navigation }) => {
 export default Why;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0A0E1A",
-  },
   container: {
     flex: 1,
-    width: "100%",
+    backgroundColor: "#101113",
   },
-  backgroundDecoration: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: "hidden",
+
+  scrollView: {
+    flex: 1,
   },
-  backgroundCircle: {
-    position: "absolute",
-    borderRadius: 1000,
-    opacity: 0.03,
+
+  scrollContent: {
+    paddingHorizontal: width * 0.06,
+    paddingTop: height * 0.03,
+    paddingBottom: height * 0.02,
   },
-  bgCircle1: {
-    width: 200,
-    height: 200,
-    backgroundColor: "#7789FF",
-    top: -100,
-    right: -100,
-  },
-  bgCircle2: {
-    width: 150,
-    height: 150,
-    backgroundColor: "#52C41A",
-    bottom: 200,
-    left: -75,
-  },
-  bgCircle3: {
-    width: 100,
-    height: 100,
-    backgroundColor: "#FAAD14",
-    top: height * 0.3,
-    right: 30,
-  },
+
+  // Header
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 25,
-  },
-  headerRow: {
-    flexDirection: "row",
+    marginBottom: height * 0.04,
     alignItems: "center",
-    marginBottom: 20,
   },
-  logoContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: "rgba(119, 137, 255, 0.15)",
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  logo: {
-    width: 22,
-    height: 22,
-  },
-  appTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#ffffff",
-    letterSpacing: 0.3,
-  },
-  mainHeading: {
-    fontSize: 30,
-    fontWeight: "900",
-    color: "#ffffff",
-    marginBottom: 8,
+
+  mainTitle: {
+    fontSize: width * 0.08,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: height * 0.01,
+    textAlign: "center",
     letterSpacing: -0.5,
   },
+
   subtitle: {
-    fontSize: 15,
-    color: "#8B92A6",
+    fontSize: width * 0.04,
+    color: "rgba(255, 255, 255, 0.7)",
     fontWeight: "500",
-    opacity: 0.8,
-  },
-  contentArea: {
-    flex: 1,
-    paddingHorizontal: 20,
-    justifyContent: "flex-start",
-  },
-  welcomeSection: {
-    marginBottom: 20,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  welcomeCard: {
-    padding: 20,
-    borderRadius: 20,
-    backgroundColor: "rgba(28, 33, 53, 0.4)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(119, 137, 255, 0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  welcomeTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#ffffff",
-    marginBottom: 6,
     textAlign: "center",
+    lineHeight: width * 0.055,
+  },
+
+  // Hero card
+  heroCard: {
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
+    borderRadius: 24,
+    padding: width * 0.08,
+    marginBottom: height * 0.04,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.2)",
+    shadowColor: "#54FF00",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+
+  heroNumber: {
+    fontSize: width * 0.12,
+    fontWeight: "700",
+    color: "#54FF00",
+    marginBottom: height * 0.01,
+    letterSpacing: -1,
+  },
+
+  heroLabel: {
+    fontSize: width * 0.05,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: height * 0.015,
     letterSpacing: -0.2,
   },
-  welcomeText: {
-    fontSize: 14,
-    color: "#B0B7C8",
+
+  heroDescription: {
+    fontSize: width * 0.035,
+    color: "rgba(255, 255, 255, 0.7)",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: width * 0.05,
     fontWeight: "500",
   },
-  featureCard: {
-    marginBottom: 12,
-    borderRadius: 16,
-    overflow: "hidden",
+
+  // Features
+  featuresContainer: {
+    marginBottom: height * 0.02,
   },
-  cardContent: {
+
+  featureRow: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: "rgba(28, 33, 53, 0.4)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
+    alignItems: "flex-start",
+    marginBottom: height * 0.025,
+    paddingHorizontal: width * 0.02,
   },
-  smallIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+
+  featureIcon: {
+    width: 44,
+    height: 44,
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginRight: width * 0.04,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.2)",
   },
-  cardTextContainer: {
+
+  featureEmoji: {
+    fontSize: 20,
+  },
+
+  featureContent: {
     flex: 1,
+    paddingTop: 2,
   },
-  cardTitle: {
-    fontSize: 16,
+
+  featureTitle: {
+    fontSize: width * 0.045,
     fontWeight: "600",
-    color: "#ffffff",
-    marginBottom: 4,
-    letterSpacing: -0.1,
+    color: "#FFFFFF",
+    marginBottom: height * 0.005,
+    letterSpacing: -0.2,
   },
-  cardText: {
-    fontSize: 13,
-    color: "#B0B7C8",
-    lineHeight: 18,
-    fontWeight: "500",
+
+  featureDescription: {
+    fontSize: width * 0.035,
+    color: "rgba(255, 255, 255, 0.7)",
+    lineHeight: width * 0.05,
+    fontWeight: "400",
   },
-  ctaContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderRadius: 24,
-    overflow: "hidden",
+
+  // Bottom section
+  bottomSection: {
+    paddingHorizontal: width * 0.06,
+    paddingBottom: height * 0.04,
+    paddingTop: height * 0.02,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
   },
-  ctaCard: {
-    position: "relative",
-    borderRadius: 24,
-    overflow: "hidden",
-  },
-  ctaContent: {
-    padding: 24,
-    alignItems: "center",
-    zIndex: 2,
-  },
-  ctaTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#ffffff",
-    marginBottom: 18,
-    textAlign: "center",
-    letterSpacing: -0.3,
-  },
+
+  // CTA
   ctaButton: {
-    borderRadius: 40,
-    overflow: "hidden",
-    shadowColor: "#000",
+    backgroundColor: "#54FF00",
+    borderRadius: 16,
+    paddingVertical: height * 0.022,
+    paddingHorizontal: width * 0.06,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#54FF00",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 6,
+    marginBottom: height * 0.025,
   },
-  buttonGradient: {
+
+  ctaButtonText: {
+    color: "#101113",
+    fontSize: width * 0.045,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+
+  // Progress indicator
+  progressContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 40,
-  },
-  ctaButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "white",
-    letterSpacing: 0.2,
-  },
-  buttonIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(79, 99, 232, 0.1)",
-    alignItems: "center",
     justifyContent: "center",
-    marginLeft: 10,
+    gap: 8,
   },
-  ctaDecoration: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
+
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
-  floatingCircle: {
-    position: "absolute",
-    borderRadius: 1000,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-  },
-  circle1: {
-    width: 60,
-    height: 60,
-    top: -30,
-    right: -30,
-  },
-  circle2: {
-    width: 40,
-    height: 40,
-    bottom: -20,
-    left: -20,
+
+  progressDotActive: {
+    backgroundColor: "#54FF00",
+    shadowColor: "#54FF00",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });
