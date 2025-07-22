@@ -8,11 +8,47 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  Dimensions,
+  Animated,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import Purchases from "react-native-purchases";
 
-// Configure RevenueCat (update your public API key as needed)
+const { width, height } = Dimensions.get("window");
+
+// Configure RevenueCat
 Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+
+// Floating decorative dots component
+const FloatingDots = () => {
+  const dots = Array.from({ length: 8 }, (_, i) => ({
+    id: i,
+    size: Math.random() * 6 + 4,
+    opacity: Math.random() * 0.6 + 0.2,
+    left: Math.random() * width,
+    top: Math.random() * height,
+  }));
+
+  return (
+    <View style={styles.floatingDotsContainer}>
+      {dots.map((dot) => (
+        <View
+          key={dot.id}
+          style={[
+            styles.floatingDot,
+            {
+              width: dot.size,
+              height: dot.size,
+              opacity: dot.opacity,
+              left: dot.left,
+              top: dot.top,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+};
 
 export default function Offer({ navigation }) {
   const [products, setProducts] = useState([]);
@@ -28,13 +64,11 @@ export default function Offer({ navigation }) {
       const { customerInfo } = await Purchases.purchasePackage(
         packageToPurchase
       );
-      // Check if the user is now subscribed
       if (
         customerInfo.activeSubscriptions &&
         customerInfo.activeSubscriptions.length > 0
       ) {
         setIsSubscribed(true);
-        // Trigger the new subscription handler
         handleNewSubscription();
       }
     } catch (error) {
@@ -49,7 +83,6 @@ export default function Offer({ navigation }) {
     }
   };
 
-  // Refactored function to handle new subscription success
   const handleNewSubscription = () => {
     Alert.alert(
       "Subscription Activated",
@@ -88,13 +121,11 @@ export default function Offer({ navigation }) {
     }
   };
 
-  // Fetch products from RevenueCat when component mounts
   useEffect(() => {
     const checkSubscriptionStatus = async () => {
       try {
         setLoading(true);
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info:", customerInfo);
 
         if (customerInfo.originalPurchaseDate !== null) {
           setHasUsedFreeTrial(true);
@@ -102,20 +133,16 @@ export default function Offer({ navigation }) {
           setHasUsedFreeTrial(false);
         }
 
-        // Check for active subscriptions
         if (
           customerInfo.activeSubscriptions &&
           customerInfo.activeSubscriptions.length > 0
         ) {
           setIsSubscribed(true);
         } else {
-          console.log("User is not subscribed.");
           setIsSubscribed(false);
         }
 
-        // // Fetch available products
         const offerings = await Purchases.getOfferings();
-        console.log("offerings :>> ", offerings);
         if (
           offerings.current !== null &&
           offerings.current.availablePackages.length > 0
@@ -134,112 +161,143 @@ export default function Offer({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <FloatingDots />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0A84FF" />
-          <Text style={styles.loadingText}>
-            Loading subscription options...
-          </Text>
+          <View style={styles.loadingSpinner}>
+            <ActivityIndicator size="large" color="#54FF00" />
+          </View>
+          <Text style={styles.loadingText}>Loading premium features...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <FloatingDots />
+
+      {/* Main Content */}
       <View style={styles.content}>
-        {/* Lottie Animation */}
-        <LottieView
-          source={require("../assets/scanning.json")}
-          autoPlay
-          loop
-          style={styles.lottie}
-        />
-
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.title}>
-            Elevate Your Betting Strategy with AI Intelligence
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <Text style={styles.heroTitle}>Unlock AI-Powered</Text>
+          <Text style={styles.heroTitleAccent}>Betting Intelligence</Text>
+          <Text style={styles.heroSubtitle}>
+            Transform your betting strategy with advanced analytics
           </Text>
         </View>
 
-        {/* Benefits Description */}
-        <View style={styles.benefitsContainer}>
-          <Text style={styles.benefitsTitle}>What You'll Get:</Text>
-          <View style={styles.benefitItem}>
-            <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.benefitsText}>Unlimited uploads</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.benefitsText}>
-              Lightning-fast insights on your bet slips
-            </Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.benefitsText}>
-              Detailed odds analysis and risk assessments
-            </Text>
-          </View>
+        {/* Premium Features Card */}
+        <View style={styles.featuresCard}>
+          <LinearGradient
+            colors={["rgba(84, 255, 0, 0.1)", "rgba(84, 255, 0, 0.05)"]}
+            style={styles.featuresGradient}
+          >
+            <Text style={styles.featuresTitle}>Premium Features</Text>
+
+            <View style={styles.featuresList}>
+              <View style={styles.featureItem}>
+                <View style={styles.featureIcon}>
+                  <Text style={styles.featureIconText}>∞</Text>
+                </View>
+                <Text style={styles.featureText}>
+                  Unlimited bet slip analysis
+                </Text>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={styles.featureIcon}>
+                  <Text style={styles.featureIconText}>⚡</Text>
+                </View>
+                <Text style={styles.featureText}>
+                  Real-time odds optimization
+                </Text>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={styles.featureIcon}>
+                  <Text style={styles.featureIconText}>📊</Text>
+                </View>
+                <Text style={styles.featureText}>Advanced risk assessment</Text>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
 
-        <View style={styles.offerContainer}>
-          {/* Billed amount is the most prominent element */}
-          <Text style={styles.billingInfo}>
-            After a 7-day free trial, your subscription will renew
-            automatically.
-          </Text>
-          <Text style={styles.billedPrice}>$19.99/month</Text>
+        {/* Pricing Card */}
+        <View style={styles.pricingCard}>
+          <LinearGradient
+            colors={["rgba(26, 24, 27, 0.9)", "rgba(16, 17, 19, 0.95)"]}
+            style={styles.pricingGradient}
+          >
+            {!hasUsedFreeTrial && (
+              <View style={styles.trialBadge}>
+                <Text style={styles.trialBadgeText}>3-DAY FREE TRIAL</Text>
+              </View>
+            )}
+
+            <Text style={styles.pricingAmount}>$4.99</Text>
+            <Text style={styles.pricingPeriod}>per week</Text>
+
+            <Text style={styles.pricingSubtext}>
+              Billed weekly after trial • Cancel anytime
+            </Text>
+          </LinearGradient>
         </View>
 
-        {/* Call-to-Action: Purchase */}
+        {/* CTA Button */}
         <TouchableOpacity
-          style={styles.subscribeButton}
+          style={[
+            styles.ctaButton,
+            processingPurchase && styles.ctaButtonDisabled,
+          ]}
           disabled={processingPurchase}
           onPress={() => {
             if (products.length > 0) {
               handlePurchase(products[0]);
-            } else {
-              console.warn("No products available to purchase");
             }
           }}
+          activeOpacity={0.8}
         >
-          {processingPurchase ? (
-            <View style={styles.buttonContent}>
-              <ActivityIndicator size="small" color="white" />
-              <Text style={[styles.buttonText, styles.processingText]}>
-                Processing...
+          <LinearGradient
+            colors={["#54FF00", "#45D400"]}
+            style={styles.ctaGradient}
+          >
+            {processingPurchase ? (
+              <View style={styles.ctaContent}>
+                <ActivityIndicator size="small" color="#101113" />
+                <Text style={styles.ctaTextProcessing}>Processing...</Text>
+              </View>
+            ) : (
+              <Text style={styles.ctaText}>
+                {hasUsedFreeTrial ? "Start Premium Access" : "Begin Free Trial"}
               </Text>
-            </View>
-          ) : (
-            <Text style={styles.buttonText}>
-              {hasUsedFreeTrial ? "Join Parlay Pal" : "Start Free Trial"}
-            </Text>
-          )}
+            )}
+          </LinearGradient>
         </TouchableOpacity>
 
-        <Text style={styles.cancelText}>
-          Cancel anytime. No commitment required.
-        </Text>
+        {/* Footer Actions */}
+        <View style={styles.footerActions}>
+          <TouchableOpacity
+            style={styles.restoreButton}
+            disabled={processingRestore}
+            onPress={handleRestorePurchases}
+          >
+            {processingRestore ? (
+              <View style={styles.restoreContent}>
+                <ActivityIndicator size="small" color="#54FF00" />
+                <Text style={styles.restoreTextProcessing}>Restoring...</Text>
+              </View>
+            ) : (
+              <Text style={styles.restoreText}>Restore Purchases</Text>
+            )}
+          </TouchableOpacity>
 
-        {/* Restore Purchases */}
-        <TouchableOpacity
-          style={styles.otherPlansButton}
-          disabled={processingRestore}
-          onPress={handleRestorePurchases}
-        >
-          {processingRestore ? (
-            <View style={styles.restoreContent}>
-              <ActivityIndicator size="small" color="#0A84FF" />
-              <Text style={[styles.otherPlansText, styles.processingText]}>
-                Restoring...
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.otherPlansText}>Restore Purchases</Text>
-          )}
-        </TouchableOpacity>
+          <Text style={styles.footerNote}>
+            Premium features unlock instantly
+          </Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -248,133 +306,249 @@ export default function Offer({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#101426",
+    backgroundColor: "#101113",
   },
+
+  // Floating Decorative Elements
+  floatingDotsContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+  },
+  floatingDot: {
+    position: "absolute",
+    backgroundColor: "#54FF00",
+    borderRadius: 50,
+  },
+
+  // Loading State
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 32,
+    zIndex: 1,
+  },
+  loadingSpinner: {
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.2)",
   },
   loadingText: {
-    marginTop: 20,
+    marginTop: 24,
     fontSize: 16,
-    color: "#8E8E93",
+    color: "rgba(255, 255, 255, 0.8)",
     textAlign: "center",
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
+
+  // Main Content
   content: {
     flex: 1,
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 24,
+    zIndex: 1,
   },
-  header: {
-    marginBottom: 25,
+
+  // Hero Section
+  heroSection: {
     alignItems: "center",
-    bottom: 15,
+    marginTop: 20,
+    marginBottom: 24,
   },
-  title: {
-    fontSize: 38,
-    fontWeight: "bold",
-    color: "white",
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 5,
-    lineHeight: 44,
+    lineHeight: 32,
+    letterSpacing: 0.5,
   },
-  offerContainer: {
-    backgroundColor: "rgba(10, 132, 255, 0.1)",
-    borderRadius: 12,
+  heroTitleAccent: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#54FF00",
+    textAlign: "center",
+    lineHeight: 32,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.7)",
+    textAlign: "center",
+    fontWeight: "500",
+    letterSpacing: 0.3,
+    marginTop: 4,
+  },
+
+  // Features Card
+  featuresCard: {
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.2)",
+  },
+  featuresGradient: {
+    padding: 16,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
+  featuresList: {
+    gap: 12,
+  },
+  featureItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  featureIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(84, 255, 0, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.3)",
+  },
+  featureIconText: {
+    fontSize: 16,
+    color: "#54FF00",
+    fontWeight: "600",
+  },
+  featureText: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    fontWeight: "500",
+    letterSpacing: 0.3,
+    flex: 1,
+  },
+
+  // Pricing Card
+  pricingCard: {
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.3)",
+  },
+  pricingGradient: {
     padding: 16,
     alignItems: "center",
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "rgba(10, 132, 255, 0.3)",
-    bottom: 25,
-    marginBottom: 10,
   },
-  billedPrice: {
-    fontSize: 24, // Larger font size for emphasis
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 4,
-  },
-  billingInfo: {
-    fontSize: 16,
-    color: "white",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  benefitsContainer: {
-    width: "100%",
-    marginBottom: 30,
-    bottom: 15,
-    padding: 5,
-  },
-  benefitsTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
+  trialBadge: {
+    backgroundColor: "#54FF00",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginBottom: 12,
   },
-  benefitItem: {
-    flexDirection: "row",
-    marginBottom: 8,
-    alignItems: "flex-start",
+  trialBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#101113",
+    letterSpacing: 1,
   },
-  bulletPoint: {
-    color: "#0A84FF",
-    fontSize: 18,
-    marginRight: 8,
-    lineHeight: 24,
+  pricingAmount: {
+    fontSize: 36,
+    fontWeight: "800",
+    color: "#54FF00",
+    letterSpacing: 0.5,
   },
-  benefitsText: {
+  pricingPeriod: {
     fontSize: 16,
-    color: "white",
-    flex: 1,
-    lineHeight: 24,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.8)",
+    marginBottom: 8,
+    letterSpacing: 0.3,
   },
-  subscribeButton: {
-    backgroundColor: "#0A84FF",
-    width: "100%",
+  pricingSubtext: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.6)",
+    textAlign: "center",
+    fontWeight: "500",
+    letterSpacing: 0.2,
+  },
+
+  // CTA Button
+  ctaButton: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 20,
+    shadowColor: "#54FF00",
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  ctaButtonDisabled: {
+    opacity: 0.7,
+  },
+  ctaGradient: {
     paddingVertical: 16,
-    borderRadius: 10,
+    paddingHorizontal: 24,
     alignItems: "center",
-    marginBottom: 5,
-    bottom: 13,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  buttonContent: {
+  ctaContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+  },
+  ctaText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#101113",
+    letterSpacing: 0.5,
+  },
+  ctaTextProcessing: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#101113",
+    marginLeft: 8,
+    letterSpacing: 0.3,
+  },
+
+  // Footer Actions
+  footerActions: {
+    alignItems: "center",
+    gap: 16,
+  },
+  restoreButton: {
+    padding: 12,
   },
   restoreContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
   },
-  processingText: {
-    marginLeft: 8,
-  },
-  cancelText: {
-    color: "#8E8E93",
-    fontSize: 14,
-    marginBottom: 15,
-  },
-  otherPlansButton: {
-    padding: 10,
-    bottom: 20,
-  },
-  otherPlansText: {
-    color: "#0A84FF",
+  restoreText: {
     fontSize: 16,
+    color: "#54FF00",
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
-  lottie: {
-    width: 230,
-    height: 230,
+  restoreTextProcessing: {
+    fontSize: 14,
+    color: "#54FF00",
+    fontWeight: "600",
+    marginLeft: 8,
+    letterSpacing: 0.2,
+  },
+  footerNote: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.5)",
+    fontWeight: "500",
+    letterSpacing: 0.2,
   },
 });
