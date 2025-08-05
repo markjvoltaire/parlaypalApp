@@ -10,9 +10,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Purchases from "react-native-purchases";
+import { config } from "../config";
 
-// Configure RevenueCat (update your public API key as needed)
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+// Configure RevenueCat with API key from config
+Purchases.configure({ apiKey: config.REVENUECAT_API_KEY });
 
 export default function Features({ navigation }) {
   const [products, setProducts] = useState([]);

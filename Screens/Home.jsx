@@ -20,14 +20,15 @@ import LottieView from "lottie-react-native";
 import Purchases from "react-native-purchases";
 import { supabase } from "../Services/supabase";
 import { LinearGradient } from "expo-linear-gradient";
+import { config } from "../config";
 
-// Replace 'your_public_sdk_key' with your RevenueCat public API key.
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+// Configure RevenueCat with API key from config
+Purchases.configure({ apiKey: config.REVENUECAT_API_KEY });
 
 const { width, height } = Dimensions.get("window");
 
-// Update this to your actual backend URL
-const API_URL = "https://parlaypal.onrender.com";
+// Get API URL from config
+const API_URL = config.API_URL;
 
 // Floating decorative elements component
 const FloatingElements = () => {

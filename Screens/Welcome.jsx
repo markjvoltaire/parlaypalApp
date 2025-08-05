@@ -16,10 +16,12 @@ import {
 import Purchases from "react-native-purchases";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
+import { config } from "../config";
 
 const { width, height } = Dimensions.get("window");
 
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+// Configure RevenueCat with API key from config
+Purchases.configure({ apiKey: config.REVENUECAT_API_KEY });
 
 export default function Welcome({ navigation }) {
   const [showSplash, setShowSplash] = useState(true);

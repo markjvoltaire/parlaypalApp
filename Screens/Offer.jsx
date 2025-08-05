@@ -13,11 +13,12 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Purchases from "react-native-purchases";
+import { config } from "../config";
 
 const { width, height } = Dimensions.get("window");
 
-// Configure RevenueCat
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
+// Configure RevenueCat with API key from config
+Purchases.configure({ apiKey: config.REVENUECAT_API_KEY });
 
 // Floating decorative dots component
 const FloatingDots = () => {
