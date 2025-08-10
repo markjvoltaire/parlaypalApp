@@ -200,7 +200,7 @@ export default function Privacy({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#101426",
+    backgroundColor: "#101113",
   },
   header: {
     flexDirection: "row",
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   policySubtitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#7789FF",
+    color: "white",
     marginTop: 12,
     marginBottom: 8,
   },

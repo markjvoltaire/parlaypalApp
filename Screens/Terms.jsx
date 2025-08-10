@@ -248,7 +248,7 @@ export default function Terms({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#101426",
+    backgroundColor: "#101113",
   },
   header: {
     flexDirection: "row",
