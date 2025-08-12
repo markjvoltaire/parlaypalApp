@@ -468,6 +468,7 @@ export default function Trial({ navigation, route }) {
               <Switch
                 value={freeTrialEnabled}
                 onValueChange={setFreeTrialEnabled}
+                disabled={selectedPlanKey === "per month"}
                 thumbColor={freeTrialEnabled ? "#ffffff" : "#ffffff"}
                 trackColor={{ false: "#d0d0d0", true: "#2bb24a" }}
               />
@@ -652,14 +653,14 @@ const styles = StyleSheet.create({
     top: -10,
     left: "80%",
     transform: [{ translateX: -40 }],
-    backgroundColor: "#2bb24a",
+    backgroundColor: "red",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     zIndex: 1,
   },
   savingsText: {
-    color: "#101113",
+    color: "white",
     fontSize: 12,
     fontWeight: "700",
     textAlign: "center",
@@ -726,7 +727,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#54FF00",
   },
   ctaText: {
-    color: "#101113",
+    color: "white",
     fontWeight: "800",
     fontSize: 18,
   },
