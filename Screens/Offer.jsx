@@ -1,554 +1,760 @@
-import LottieView from "lottie-react-native";
-import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
-  SafeAreaView,
-  Alert,
+  Image,
   ActivityIndicator,
   Dimensions,
+  Alert,
   Animated,
+  StatusBar,
+  ScrollView,
+  SafeAreaView,
+  Switch,
+  Linking,
 } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import Purchases from "react-native-purchases";
+import { supabase } from "../Services/supabase";
 
 const { width, height } = Dimensions.get("window");
 
-// Configure RevenueCat
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
-
-// Floating decorative dots component
-const FloatingDots = () => {
-  const dots = Array.from({ length: 8 }, (_, i) => ({
-    id: i,
-    size: Math.random() * 6 + 4,
-    opacity: Math.random() * 0.6 + 0.2,
-    left: Math.random() * width,
-    top: Math.random() * height,
-  }));
-
-  return (
-    <View style={styles.floatingDotsContainer}>
-      {dots.map((dot) => (
-        <View
-          key={dot.id}
-          style={[
-            styles.floatingDot,
-            {
-              width: dot.size,
-              height: dot.size,
-              opacity: dot.opacity,
-              left: dot.left,
-              top: dot.top,
-            },
-          ]}
-        />
-      ))}
-    </View>
-  );
-};
-
-export default function Offer({ navigation }) {
-  const [products, setProducts] = useState([]);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [loading, setLoading] = useState(true);
+/* ------------------------------
+   Hook: fetch offerings & packages
+   ------------------------------ */
+const usePurchase = () => {
+  const [packages, setPackages] = useState({
+    weekly: null,
+    monthly: null,
+  });
   const [processingPurchase, setProcessingPurchase] = useState(false);
-  const [processingRestore, setProcessingRestore] = useState(false);
-  const [hasUsedFreeTrial, setHasUsedFreeTrial] = useState(false);
 
-  const handlePurchase = async (packageToPurchase) => {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
     try {
-      setProcessingPurchase(true);
-      const { customerInfo } = await Purchases.purchasePackage(
-        packageToPurchase
-      );
-      if (
-        customerInfo.activeSubscriptions &&
-        customerInfo.activeSubscriptions.length > 0
-      ) {
-        setIsSubscribed(true);
-        handleNewSubscription();
-      }
-    } catch (error) {
-      if (!error.userCancelled) {
+      const offerings = await Purchases.getOfferings();
+      // safe-access helper
+      const all = offerings?.all || {};
+      const weeklyOffering = all["Weekly"] || null;
+      const monthlyOffering = all["Monthly"] || null;
+
+      const weeklyPkg =
+        weeklyOffering?.availablePackages &&
+        weeklyOffering.availablePackages.length > 0
+          ? weeklyOffering.availablePackages[0]
+          : null;
+
+      const monthlyPkg =
+        monthlyOffering?.availablePackages &&
+        monthlyOffering.availablePackages.length > 0
+          ? monthlyOffering.availablePackages[0]
+          : null;
+
+      setPackages({
+        weekly: weeklyPkg,
+        monthly: monthlyPkg,
+      });
+
+      // warning if none found
+      if (!weeklyPkg && !monthlyPkg) {
         Alert.alert(
           "Error",
-          "There was a problem with your purchase. Please try again."
+          "No subscription packages found. Please try again later."
         );
       }
+    } catch (error) {
+      console.error("Error fetching offerings:", error);
+      Alert.alert(
+        "Error",
+        "Failed to load subscription options. Please try again."
+      );
+    }
+  };
+
+  const handlePurchase = async (selectedPackage) => {
+    if (!selectedPackage) {
+      Alert.alert("Error", "No subscription package selected.");
+      return false;
+    }
+
+    try {
+      setProcessingPurchase(true);
+      const { customerInfo } = await Purchases.purchasePackage(selectedPackage);
+      // activeSubscriptions presence check
+      const isActive =
+        customerInfo?.activeSubscriptions &&
+        customerInfo.activeSubscriptions.length > 0;
+      return isActive;
+    } catch (error) {
+      // RevenueCat error object shape: error.userCancelled
+      if (!(error && error.userCancelled)) {
+        console.error("Purchase error:", error);
+        Alert.alert("Error", "Failed to process purchase. Please try again.");
+      }
+      return false;
     } finally {
       setProcessingPurchase(false);
     }
   };
 
-  const handleNewSubscription = () => {
-    Alert.alert(
-      "Subscription Activated",
-      "Your premium access is now unlocked. Enjoy!",
-      [
-        {
-          text: "Continue",
-          onPress: () => navigation.navigate("AccessGranted"),
-        },
-      ],
-      { cancelable: false }
-    );
-  };
-
-  const handleRestorePurchases = async () => {
+  const restorePurchases = async () => {
     try {
-      setProcessingRestore(true);
-      const customerInfo = await Purchases.restorePurchases();
-
-      if (
-        customerInfo.activeSubscriptions &&
-        customerInfo.activeSubscriptions.length > 0
-      ) {
-        navigation.navigate("AccessGranted");
-        Alert.alert("Success", "Your purchases have been restored!");
-      } else {
-        Alert.alert(
-          "No Purchases Found",
-          "No active subscriptions were found to restore."
-        );
-      }
-    } catch (error) {
-      Alert.alert("Error", "Failed to restore purchases. Please try again.");
-    } finally {
-      setProcessingRestore(false);
+      setProcessingPurchase(true);
+      const info = await Purchases.restorePurchases();
+      setProcessingPurchase(false);
+      return info;
+    } catch (err) {
+      setProcessingPurchase(false);
+      console.error("Restore error:", err);
+      Alert.alert("Error", "Failed to restore purchases.");
+      return null;
     }
   };
 
+  return {
+    packages,
+    processingPurchase,
+    handlePurchase,
+    restorePurchases,
+  };
+};
+
+/* ------------------------------
+   FloatingOrbs (kept from you)
+   ------------------------------ */
+const FloatingOrbs = () => {
+  const orb1 = useRef(new Animated.Value(0)).current;
+  const orb2 = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      try {
-        setLoading(true);
-        const customerInfo = await Purchases.getCustomerInfo();
-
-        if (customerInfo.originalPurchaseDate !== null) {
-          setHasUsedFreeTrial(true);
-        } else {
-          setHasUsedFreeTrial(false);
-        }
-
-        if (
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0
-        ) {
-          setIsSubscribed(true);
-        } else {
-          setIsSubscribed(false);
-        }
-
-        const offerings = await Purchases.getOfferings();
-        if (
-          offerings.current !== null &&
-          offerings.current.availablePackages.length > 0
-        ) {
-          setProducts(offerings.current.availablePackages);
-        }
-      } catch (error) {
-        console.error("Error fetching customer info:", error);
-      } finally {
-        setLoading(false);
-      }
+    const animateOrb = (orb, duration, delay = 0) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(orb, {
+            toValue: 1,
+            duration: duration,
+            useNativeDriver: true,
+          }),
+          Animated.timing(orb, {
+            toValue: 0,
+            duration: duration,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
     };
 
-    checkSubscriptionStatus();
+    animateOrb(orb1, 6000, 0);
+    animateOrb(orb2, 8000, 2000);
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <FloatingDots />
-        <View style={styles.loadingContainer}>
-          <View style={styles.loadingSpinner}>
-            <ActivityIndicator size="large" color="#54FF00" />
-          </View>
-          <Text style={styles.loadingText}>Loading premium features...</Text>
-        </View>
-      </View>
-    );
+  return (
+    <>
+      <Animated.View
+        style={[
+          styles.floatingOrb,
+          styles.orb1,
+          {
+            opacity: orb1.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0.1, 0.3, 0.1],
+            }),
+            transform: [
+              {
+                scale: orb1.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0.8, 1.2, 0.8],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.floatingOrb,
+          styles.orb2,
+          {
+            opacity: orb2.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0.05, 0.2, 0.05],
+            }),
+            transform: [
+              {
+                scale: orb2.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [1, 0.7, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+    </>
+  );
+};
+
+/* ------------------------------
+   Utility: safe localized price extraction
+   RevenueCat product fields differ by platform, try a few keys.
+   ------------------------------ */
+const getLocalizedPrice = (pkg) => {
+  if (!pkg || !pkg.product) return "";
+  const product = pkg.product;
+  // common possibilities:
+  if (product.localizedPrice) return product.localizedPrice;
+  if (product.priceString) return product.priceString;
+  if (product.price && product.currency) {
+    return `${product.price} ${product.currency}`;
   }
+  // fallback
+  return product.title || "";
+};
+
+const getSubtitleForPackage = (pkg) => {
+  if (!pkg || !pkg.product) return "";
+  // best effort: use subscription period or serverDescription on offering
+  const p = pkg.product;
+  if (p.subscriptionPeriod) {
+    return p.subscriptionPeriod;
+  }
+  if (pkg?.offering?.serverDescription) {
+    return pkg.offering.serverDescription;
+  }
+  // fallback: try to infer
+  return pkg.packageType ? pkg.packageType.toLowerCase() : "";
+};
+
+/* ------------------------------
+   Main Component — Redesigned paywall UI
+   ------------------------------ */
+export default function Trial({ navigation, route }) {
+  const { packages, processingPurchase, handlePurchase, restorePurchases } =
+    usePurchase();
+  const email = route?.params?.email || "";
+
+  const [selectedPlanKey, setSelectedPlanKey] = useState("per week"); // 'weekly' | 'monthly'
+  const [freeTrialEnabled, setFreeTrialEnabled] = useState(true);
+  const [hasUsedTrial, setHasUsedTrial] = useState(false);
+
+  // Auto-disable trial when monthly is selected
+  useEffect(() => {
+    if (selectedPlanKey === "per month") {
+      setFreeTrialEnabled(false);
+    } else if (selectedPlanKey === "per week" && !hasUsedTrial) {
+      setFreeTrialEnabled(true);
+    }
+  }, [selectedPlanKey, hasUsedTrial]);
+
+  // Check if user has already used their trial
+  useEffect(() => {
+    checkTrialStatus();
+  }, [email]);
+
+  const checkTrialStatus = async () => {
+    if (!email) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("trials")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+      if (data) {
+        setHasUsedTrial(true);
+        setFreeTrialEnabled(false);
+      }
+    } catch (error) {
+      console.error("Error checking trial status:", error);
+    }
+  };
+
+  // entrance animation (kept)
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // pick the package object based on selection
+  const selectedPackage =
+    selectedPlanKey === "per week" ? packages.weekly : packages.monthly;
+
+  const onPurchasePress = async () => {
+    try {
+      // If product isn't ready
+      if (!selectedPackage) {
+        Alert.alert(
+          "Not available",
+          "Selected plan is not available right now."
+        );
+        return;
+      }
+
+      // Trigger purchase via hook
+      const success = await handlePurchase(selectedPackage);
+
+      // fetch customer info to get user id for DB
+      let customerInfo;
+      try {
+        customerInfo = await Purchases.getCustomerInfo();
+      } catch (err) {
+        console.error("Error getting customer info after purchase:", err);
+      }
+
+      const userId = customerInfo?.originalAppUserId || null;
+
+      if (success) {
+        // store trial / subscription in supabase (existing logic)
+        const { error } = await supabase.from("trials").insert({
+          email: email,
+          userid: userId,
+        });
+        if (error) {
+          console.error("Error inserting into trials table:", error);
+        }
+        navigation.navigate("AccessGranted");
+      }
+    } catch (err) {
+      console.error("Error in onPurchasePress:", err);
+    }
+  };
+
+  const onRestorePress = async () => {
+    const info = await restorePurchases();
+    // if active subscriptions exist, navigate
+    if (info?.activeSubscriptions && info.activeSubscriptions.length > 0) {
+      navigation.navigate("AccessGranted");
+    } else {
+      Alert.alert("Restore", "No active subscriptions found.");
+    }
+  };
+
+  // small helper to render a plan card
+  const PlanCard = ({ pkg, title, planKey }) => {
+    const localizedPrice = getLocalizedPrice(pkg);
+
+    // Custom subtitle logic based on plan key
+    let subtitle;
+    if (planKey === "per month") {
+      subtitle = "Per month • 3-day trial included";
+    } else if (planKey === "per week") {
+      subtitle = "Per week • 3-day trial included";
+    } else {
+      subtitle = pkg?.packageType
+        ? pkg.packageType.toLowerCase() === "annual"
+          ? "Billed Annually"
+          : pkg.packageType.toLowerCase()
+        : getSubtitleForPackage(pkg);
+    }
+
+    const selected = selectedPlanKey === planKey;
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        style={[
+          styles.planCard,
+          selected ? styles.planCardSelected : styles.planCardDefault,
+        ]}
+        onPress={() => setSelectedPlanKey(planKey)}
+      >
+        <View style={styles.planInner}>
+          <View>
+            <Text style={styles.planPrice}>
+              {localizedPrice || title}{" "}
+              {planKey === "per month"
+                ? "per month"
+                : planKey === "per week"
+                ? "per week"
+                : ""}
+            </Text>
+            <Text style={styles.planSubtitle}>
+              {pkg
+                ? planKey === "per week"
+                  ? "3-day trial included"
+                  : "billed monthly"
+                : "Not available"}
+            </Text>
+          </View>
+
+          {selected && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Selected</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Savings Banner for Monthly Plan */}
+        {planKey === "per month" && (
+          <View style={styles.savingsBanner}>
+            <Text style={styles.savingsText}>50% SAVINGS</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <FloatingDots />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <FloatingOrbs />
 
-      {/* Main Content */}
-      <View style={styles.content}>
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>Unlock AI-Powered</Text>
-          <Text style={styles.heroTitleAccent}>Betting Intelligence</Text>
-          <Text style={styles.heroSubtitle}>
-            Transform your betting strategy with advanced analytics
-          </Text>
-        </View>
-
-        {/* Premium Features Card */}
-        <View style={styles.featuresCard}>
-          <LinearGradient
-            colors={["rgba(84, 255, 0, 0.1)", "rgba(84, 255, 0, 0.05)"]}
-            style={styles.featuresGradient}
-          >
-            <Text style={styles.featuresTitle}>Premium Features</Text>
-
-            <View style={styles.featuresList}>
-              <View style={styles.featureItem}>
-                <View style={styles.featureIcon}>
-                  <Text style={styles.featureIconText}>∞</Text>
-                </View>
-                <Text style={styles.featureText}>
-                  Unlimited bet slip analysis
-                </Text>
-              </View>
-
-              <View style={styles.featureItem}>
-                <View style={styles.featureIcon}>
-                  <Text style={styles.featureIconText}>⚡</Text>
-                </View>
-                <Text style={styles.featureText}>
-                  Real-time odds optimization
-                </Text>
-              </View>
-
-              <View style={styles.featureItem}>
-                <View style={styles.featureIcon}>
-                  <Text style={styles.featureIconText}>📊</Text>
-                </View>
-                <Text style={styles.featureText}>Advanced risk assessment</Text>
-              </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.hero}>
+          <Image
+            source={require("../assets/Activity.png")}
+            style={styles.heroIcon}
+          />
+          <Text style={styles.heroTitle}>Unlock Unlimited Insights</Text>
+          <View style={styles.benefits}>
+            <View style={styles.benefitRow}>
+              <Ionicons name="checkmark-circle" size={20} color="#2bb24a" />
+              <Text style={styles.benefitText}>Advanced AI bet analysis</Text>
             </View>
-          </LinearGradient>
+            <View style={styles.benefitRow}>
+              <Ionicons name="checkmark-circle" size={20} color="#2bb24a" />
+              <Text style={styles.benefitText}>Deep Matchup Insights</Text>
+            </View>
+            <View style={styles.benefitRow}>
+              <Ionicons name="checkmark-circle" size={20} color="#2bb24a" />
+              <Text style={styles.benefitText}>Cancel anytime</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Pricing Card */}
-        <View style={styles.pricingCard}>
-          <LinearGradient
-            colors={["rgba(26, 24, 27, 0.9)", "rgba(16, 17, 19, 0.95)"]}
-            style={styles.pricingGradient}
-          >
-            {!hasUsedFreeTrial && (
-              <View style={styles.trialBadge}>
-                <Text style={styles.trialBadgeText}>3-DAY FREE TRIAL</Text>
-              </View>
-            )}
+        <View style={styles.plansSection}>
+          {/* Annual / Monthly - use your offerings */}
+          <PlanCard
+            pkg={packages.monthly} // monthly offering could be annual or monthly depending on your backend
+            title={"$29.99 per year"}
+            planKey={"per month"}
+          />
 
-            <Text style={styles.pricingAmount}>$4.99</Text>
-            <Text style={styles.pricingPeriod}>per week</Text>
+          <PlanCard
+            pkg={packages.weekly}
+            title={"$2.99 per week"}
+            planKey={"per week"}
+          />
 
-            <Text style={styles.pricingSubtext}>
-              Billed weekly after trial • Cancel anytime
-            </Text>
-          </LinearGradient>
-        </View>
+          {/* Trial toggle - only show if user hasn't used trial */}
+          {!hasUsedTrial && (
+            <View style={styles.trialRow}>
+              <Text style={styles.trialLabel}>Free Trial Enabled</Text>
+              <Switch
+                value={freeTrialEnabled}
+                onValueChange={setFreeTrialEnabled}
+                disabled={selectedPlanKey === "per month"}
+                thumbColor={freeTrialEnabled ? "#ffffff" : "#ffffff"}
+                trackColor={{ false: "#d0d0d0", true: "#2bb24a" }}
+              />
+            </View>
+          )}
 
-        {/* CTA Button */}
-        <TouchableOpacity
-          style={[
-            styles.ctaButton,
-            processingPurchase && styles.ctaButtonDisabled,
-          ]}
-          disabled={processingPurchase}
-          onPress={() => {
-            if (products.length > 0) {
-              handlePurchase(products[0]);
-            }
-          }}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={["#54FF00", "#45D400"]}
-            style={styles.ctaGradient}
-          >
-            {processingPurchase ? (
-              <View style={styles.ctaContent}>
-                <ActivityIndicator size="small" color="#101113" />
-                <Text style={styles.ctaTextProcessing}>Processing...</Text>
-              </View>
-            ) : (
-              <Text style={styles.ctaText}>
-                {hasUsedFreeTrial ? "Start Premium Access" : "Begin Free Trial"}
-              </Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Footer Actions */}
-        <View style={styles.footerActions}>
+          {/* Purchase CTA */}
           <TouchableOpacity
-            style={styles.restoreButton}
-            disabled={processingRestore}
-            onPress={handleRestorePurchases}
+            style={[
+              styles.ctaButton,
+              (!selectedPackage || processingPurchase) && { opacity: 0.7 },
+            ]}
+            onPress={onPurchasePress}
+            disabled={!selectedPackage || processingPurchase}
+            activeOpacity={0.9}
           >
-            {processingRestore ? (
-              <View style={styles.restoreContent}>
-                <ActivityIndicator size="small" color="#54FF00" />
-                <Text style={styles.restoreTextProcessing}>Restoring...</Text>
-              </View>
-            ) : (
-              <Text style={styles.restoreText}>Restore Purchases</Text>
-            )}
+            <LinearGradient
+              colors={["#2bb24a", "#1fa12b"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaGradient}
+            >
+              {processingPurchase ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator
+                    style={{ marginRight: 10 }}
+                    size="small"
+                    color="white"
+                  />
+                  <Text style={styles.ctaText}>Processing...</Text>
+                </View>
+              ) : (
+                <Text style={styles.ctaText}>Continue</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
 
-          <Text style={styles.footerNote}>
-            Premium features unlock instantly
-          </Text>
+          {/* Footer Links */}
+          <View style={styles.footerLinks}>
+            <TouchableOpacity onPress={onRestorePress}>
+              <Text style={styles.footerLinkText}>Restore</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dot} />
+
+            <TouchableOpacity onPress={() => navigation.navigate("Terms")}>
+              <Text style={styles.footerLinkText}>Terms of Use</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dot} />
+
+            <TouchableOpacity onPress={() => navigation.navigate("Privacy")}>
+              <Text style={styles.footerLinkText}>Privacy Policy</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
+/* ------------------------------
+   Styles tuned to resemble screenshot
+   ------------------------------ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#101113",
   },
 
-  // Floating Decorative Elements
-  floatingDotsContainer: {
+  floatingOrb: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-  },
-  floatingDot: {
-    position: "absolute",
+    borderRadius: 100,
     backgroundColor: "#54FF00",
-    borderRadius: 50,
+    opacity: 0.15,
+  },
+  orb1: {
+    width: 100,
+    height: 100,
+    top: 40,
+    right: -60,
+  },
+  orb2: {
+    width: 150,
+    height: 150,
+    bottom: 10,
+    left: -50,
   },
 
-  // Loading State
-  loadingContainer: {
+  scrollView: {
     flex: 1,
-    justifyContent: "center",
+    margin: 5,
+  },
+  scrollContent: {
+    paddingBottom: 48,
+    paddingHorizontal: 20,
+  },
+
+  header: {
+    marginTop: 6,
+    flexDirection: "row",
     alignItems: "center",
-    padding: 32,
-    zIndex: 1,
+    justifyContent: "space-between",
   },
-  loadingSpinner: {
-    backgroundColor: "rgba(26, 24, 27, 0.8)",
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(84, 255, 0, 0.2)",
-  },
-  loadingText: {
-    marginTop: 24,
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.8)",
-    textAlign: "center",
-    fontWeight: "600",
-    letterSpacing: 0.5,
-  },
-
-  // Main Content
-  content: {
-    flex: 1,
-    padding: 24,
-    zIndex: 1,
-  },
-
-  // Hero Section
-  heroSection: {
+  topBrand: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 20,
-    marginBottom: 24,
   },
-  heroTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    textAlign: "center",
-    lineHeight: 32,
-    letterSpacing: 0.5,
+  brandLogo: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    marginRight: 12,
   },
-  heroTitleAccent: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#54FF00",
-    textAlign: "center",
-    lineHeight: 32,
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.7)",
-    textAlign: "center",
-    fontWeight: "500",
-    letterSpacing: 0.3,
-    marginTop: 4,
-  },
-
-  // Features Card
-  featuresCard: {
-    marginBottom: 20,
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(84, 255, 0, 0.2)",
-  },
-  featuresGradient: {
-    padding: 16,
-  },
-  featuresTitle: {
+  brandTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  closeBtn: {
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.15)",
+  },
+
+  hero: {
+    alignItems: "center",
+    marginTop: 20,
+  },
+  heroIcon: {
+    width: 64,
+    height: 64,
+    marginBottom: 54,
+    top: 10,
+  },
+  heroTitle: {
+    fontSize: 27,
+    fontWeight: "800",
     textAlign: "center",
-    marginBottom: 16,
-    letterSpacing: 0.5,
+    marginBottom: 25,
+    color: "#FFFFFF",
   },
-  featuresList: {
-    gap: 12,
+  benefits: {
+    width: "100%",
+    paddingHorizontal: 20,
   },
-  featureItem: {
+  benefitRow: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  featureIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "rgba(84, 255, 0, 0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: "rgba(84, 255, 0, 0.3)",
-  },
-  featureIconText: {
-    fontSize: 16,
-    color: "#54FF00",
-    fontWeight: "600",
-  },
-  featureText: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.9)",
-    fontWeight: "500",
-    letterSpacing: 0.3,
-    flex: 1,
-  },
-
-  // Pricing Card
-  pricingCard: {
-    marginBottom: 20,
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(84, 255, 0, 0.3)",
-  },
-  pricingGradient: {
-    padding: 16,
-    alignItems: "center",
-  },
-  trialBadge: {
-    backgroundColor: "#54FF00",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
     marginBottom: 12,
   },
-  trialBadgeText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#101113",
-    letterSpacing: 1,
-  },
-  pricingAmount: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#54FF00",
-    letterSpacing: 0.5,
-  },
-  pricingPeriod: {
+  benefitText: {
+    marginLeft: 12,
     fontSize: 16,
+    color: "rgba(255, 255, 255, 0.7)",
     fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.8)",
-    marginBottom: 8,
-    letterSpacing: 0.3,
-  },
-  pricingSubtext: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.6)",
-    textAlign: "center",
-    fontWeight: "500",
-    letterSpacing: 0.2,
   },
 
-  // CTA Button
-  ctaButton: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 20,
-    shadowColor: "#54FF00",
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+  plansSection: {
+    marginTop: 26,
+    paddingHorizontal: 0,
+    paddingBottom: 60,
   },
-  ctaButtonDisabled: {
-    opacity: 0.7,
+
+  planCard: {
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    backdropFilter: "blur(10px)",
+    position: "relative",
+  },
+  savingsBanner: {
+    position: "absolute",
+    top: -10,
+    left: "80%",
+    transform: [{ translateX: -40 }],
+    backgroundColor: "red",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  savingsText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  planCardDefault: {
+    borderColor: "rgba(84, 255, 0, 0.15)",
+  },
+  planCardSelected: {
+    borderColor: "#54FF00",
+    backgroundColor: "rgba(84, 255, 0, 0.05)",
+  },
+  planInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  planPrice: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  planSubtitle: {
+    fontSize: 18,
+    color: "white",
+    marginTop: 6,
+    fontWeight: "500",
+  },
+  badge: {
+    backgroundColor: "#54FF00",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 18,
+  },
+  badgeText: {
+    color: "#101113",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+
+  trialRow: {
+    marginTop: 8,
+    marginBottom: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  trialLabel: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+
+  ctaButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginTop: 8,
   },
   ctaGradient: {
     paddingVertical: 16,
-    paddingHorizontal: 24,
     alignItems: "center",
-  },
-  ctaContent: {
-    flexDirection: "row",
-    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#54FF00",
   },
   ctaText: {
-    fontSize: 16,
+    color: "white",
     fontWeight: "800",
-    color: "#101113",
-    letterSpacing: 0.5,
+    fontSize: 18,
   },
-  ctaTextProcessing: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#101113",
-    marginLeft: 8,
-    letterSpacing: 0.3,
-  },
-
-  // Footer Actions
-  footerActions: {
-    alignItems: "center",
-    gap: 16,
-  },
-  restoreButton: {
-    padding: 12,
-  },
-  restoreContent: {
+  loadingRow: {
     flexDirection: "row",
     alignItems: "center",
   },
-  restoreText: {
-    fontSize: 16,
-    color: "#54FF00",
-    fontWeight: "600",
-    letterSpacing: 0.3,
+
+  footerLinks: {
+    marginTop: 18,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
   },
-  restoreTextProcessing: {
+  footerLinkText: {
+    color: "#54FF00",
     fontSize: 14,
-    color: "#54FF00",
+    marginHorizontal: 6,
     fontWeight: "600",
-    marginLeft: 8,
-    letterSpacing: 0.2,
   },
-  footerNote: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.5)",
-    fontWeight: "500",
-    letterSpacing: 0.2,
+  dot: {
+    width: 6,
+    height: 6,
+    backgroundColor: "rgba(84, 255, 0, 0.15)",
+    borderRadius: 3,
+    marginHorizontal: 4,
+    alignSelf: "center",
   },
 });

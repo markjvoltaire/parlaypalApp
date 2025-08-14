@@ -117,7 +117,7 @@ const Why = ({ route, navigation }) => {
 
         {/* Hero Stats */}
         <Animated.View style={[styles.heroCard, { opacity: fadeAnim }]}>
-          <Text style={styles.heroNumber}>7,000+</Text>
+          <Text style={styles.heroNumber}>9,000+</Text>
           <Text style={styles.heroLabel}>Slips Analyzed</Text>
           <Text style={styles.heroDescription}>
             Our AI has processed thousands of bet slips to provide accurate
