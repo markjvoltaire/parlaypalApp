@@ -20,8 +20,7 @@ import { config } from "../config";
 
 const { width, height } = Dimensions.get("window");
 
-// Configure RevenueCat with API key from config
-Purchases.configure({ apiKey: config.REVENUECAT_API_KEY });
+// RevenueCat is configured once in App.tsx
 
 export default function Welcome({ navigation }) {
   const [showSplash, setShowSplash] = useState(true);

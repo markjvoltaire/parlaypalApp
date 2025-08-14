@@ -22,8 +22,7 @@ import { supabase } from "../Services/supabase";
 import { LinearGradient } from "expo-linear-gradient";
 import { config } from "../config";
 
-// Configure RevenueCat with API key from config
-Purchases.configure({ apiKey: config.REVENUECAT_API_KEY });
+// RevenueCat is configured once in App.tsx
 
 const { width, height } = Dimensions.get("window");
 

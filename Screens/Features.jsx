@@ -12,8 +12,7 @@ import {
 import Purchases from "react-native-purchases";
 import { config } from "../config";
 
-// Configure RevenueCat with API key from config
-Purchases.configure({ apiKey: config.REVENUECAT_API_KEY });
+// RevenueCat is configured once in App.tsx
 
 export default function Features({ navigation }) {
   const [products, setProducts] = useState([]);
