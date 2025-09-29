@@ -18,21 +18,17 @@ import { useState, useRef, useEffect } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import Purchases from "react-native-purchases";
-import { supabase } from "../Services/supabase";
 import { LinearGradient } from "expo-linear-gradient";
+// import EventSource from "react-native-event-source";
 
+const { width, height } = Dimensions.get("window");
+const API_URL = "https://parlaypal.onrender.com";
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
 Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 
-const { width, height } = Dimensions.get("window");
-
-// Update this to your actual backend URL
-const API_URL = "https://parlaypal.onrender.com";
-
-// Floating decorative elements component
+/* ---------------- Floating decorative dots ---------------- */
 const FloatingElements = () => {
   const animatedValue = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     Animated.loop(
       Animated.timing(animatedValue, {
@@ -41,8 +37,7 @@ const FloatingElements = () => {
         useNativeDriver: true,
       })
     ).start();
-  }, []);
-
+  }, [animatedValue]);
   return (
     <View style={styles.floatingElements}>
       <Animated.View
@@ -105,21 +100,20 @@ const FloatingElements = () => {
   );
 };
 
-// Glassmorphism Card Component
+/* ---------------- Reusable glass card ---------------- */
 const GlassCard = ({ children, style, ...props }) => (
   <View style={[styles.glassCard, style]} {...props}>
     {children}
   </View>
 );
 
-// Inline Splash Screen Component
+/* ---------------- Inline splash ---------------- */
 const SplashScreen = ({ onFinish }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Start animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -134,7 +128,6 @@ const SplashScreen = ({ onFinish }) => {
       }),
     ]).start();
 
-    // Glow animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
@@ -150,7 +143,6 @@ const SplashScreen = ({ onFinish }) => {
       ])
     ).start();
 
-    // Hide splash after 3s
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -165,24 +157,14 @@ const SplashScreen = ({ onFinish }) => {
   }, [fadeAnim, scaleAnim, glowAnim, onFinish]);
 
   return (
-    <Animated.View
-      style={[
-        styles.splashContainer,
-        {
-          opacity: fadeAnim,
-        },
-      ]}
-    >
+    <Animated.View style={[styles.splashContainer, { opacity: fadeAnim }]}>
       <FloatingElements />
       <Animated.View
         style={[
           styles.splashLogoContainer,
-          {
-            transform: [{ scale: scaleAnim }],
-          },
+          { transform: [{ scale: scaleAnim }] },
         ]}
       >
-        {/* Animated glow effect */}
         <Animated.View
           style={[
             styles.logoGlow,
@@ -208,8 +190,6 @@ const SplashScreen = ({ onFinish }) => {
         />
         <Text style={styles.splashAppTitle}>Parlay Pal</Text>
         <Text style={styles.splashAppTagline}>AI-Powered Bet Analysis</Text>
-
-        {/* Loading indicator */}
         <View style={styles.splashLoader}>
           <View style={styles.loaderDots}>
             {[0, 1, 2].map((i) => (
@@ -241,24 +221,234 @@ const SplashScreen = ({ onFinish }) => {
   );
 };
 
+/* ---------------- Bet skeleton (optional) ---------------- */
+const BetSkeleton = () => (
+  <View style={[styles.betContainer, { opacity: 0.7 }]}>
+    <View style={styles.betHeader}>
+      <View style={{ flex: 1, marginRight: 12 }}>
+        <View
+          style={{
+            height: 18,
+            backgroundColor: "rgba(255,255,255,0.08)",
+            borderRadius: 6,
+            marginBottom: 8,
+          }}
+        />
+        <View
+          style={{
+            height: 14,
+            width: "60%",
+            backgroundColor: "rgba(255,255,255,0.06)",
+            borderRadius: 6,
+          }}
+        />
+      </View>
+      <View style={styles.oddsTag}>
+        <Text style={styles.oddsText}>…</Text>
+      </View>
+    </View>
+    <View
+      style={{
+        height: 10,
+        backgroundColor: "rgba(255,255,255,0.08)",
+        borderRadius: 5,
+        marginVertical: 16,
+      }}
+    />
+    <GlassCard style={styles.insightsCard}>
+      <View
+        style={{
+          height: 14,
+          backgroundColor: "rgba(255,255,255,0.06)",
+          borderRadius: 6,
+          marginBottom: 10,
+        }}
+      />
+      <View
+        style={{
+          height: 14,
+          backgroundColor: "rgba(255,255,255,0.06)",
+          borderRadius: 6,
+          marginBottom: 10,
+        }}
+      />
+      <View
+        style={{
+          height: 14,
+          backgroundColor: "rgba(255,255,255,0.06)",
+          borderRadius: 6,
+        }}
+      />
+    </GlassCard>
+  </View>
+);
+
+/* ---------------- Single pending loader (global) ---------------- */
+const PendingLoader = ({ count }) => (
+  <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
+    <View
+      style={{
+        backgroundColor: "rgba(255,255,255,0.06)",
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: "rgba(84,255,0,0.12)",
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <ActivityIndicator color="#54FF00" />
+        <Text
+          style={{
+            marginLeft: 12,
+            color: "rgba(255,255,255,0.85)",
+            fontWeight: "600",
+          }}
+        >
+          Processing {count} more {count === 1 ? "leg" : "legs"}…
+        </Text>
+      </View>
+    </View>
+  </View>
+);
+
+/* ---------------- Helpers ---------------- */
+const normalizeTeams = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean).map(String);
+  if (typeof value === "string") {
+    const parts = value
+      .split(/\s*(?:vs\.?|@|-|,|\band\b)\s*/i)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return parts.length ? parts : [value.trim()];
+  }
+  if (typeof value === "object") {
+    const { home, away, team, opponent } = value;
+    const arr = [home, away, team, opponent].filter(Boolean).map(String);
+    return arr.length ? arr : [];
+  }
+  return [];
+};
+
+const getMatchupKey = (bet) => {
+  const teams = normalizeTeams(bet?.teams);
+  if (teams.length >= 2) return `${teams[0]} vs ${teams[1]}`;
+  if (bet?.matchup) return String(bet.matchup);
+  if (bet?.detail) return String(bet.detail);
+  return "";
+};
+
+/* ---------------- Probability helpers ---------------- */
+const calculateImpliedProbability = (odds) => {
+  const n = Number(odds);
+  if (!Number.isFinite(n)) return null;
+  const p = n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
+  return p * 100;
+};
+
+const normalizePct = (v) => {
+  if (v == null) return null;
+  const num = Number(v);
+  if (!Number.isFinite(num)) return null;
+  return num <= 1 ? num * 100 : num;
+};
+
+const calculateParlayProbability = (bets) => {
+  if (!Array.isArray(bets) || bets.length === 0) return null;
+  const product = bets.reduce((acc, bet) => {
+    if (Number.isFinite(bet?.odds)) {
+      const pct = calculateImpliedProbability(bet.odds);
+      return acc * (pct / 100);
+    }
+    const pct = normalizePct(bet?.probability);
+    if (pct == null) return acc;
+    return acc * (pct / 100);
+  }, 1);
+  return product * 100;
+};
+
+/* ---------------- Inline Odds Component ---------------- */
+const InlineOdds = ({ matchup, data }) => {
+  if (!matchup || !data) return null;
+  return (
+    <GlassCard style={[styles.insightsCard, { marginTop: 12 }]}>
+      <View style={styles.insightRow}>
+        <View style={styles.insightIconContainer}>
+          <Ionicons name="pricetags-outline" size={18} color="#54FF00" />
+        </View>
+        <View style={styles.insightContent}>
+          <Text style={styles.insightLabel}>Market Odds</Text>
+          <Text style={styles.insightText}>
+            Books compared: {data.books_considered?.length || 0}
+          </Text>
+        </View>
+      </View>
+
+      {Array.isArray(data.books_considered) &&
+        data.books_considered.length > 0 && (
+          <>
+            <View style={styles.insightDivider} />
+            {data.books_considered.map((book, idx) => (
+              <View key={`${matchup}-book-${idx}`} style={styles.bookOddRow}>
+                <Text style={styles.bookName}>{book.book}</Text>
+                <Text style={styles.bookOdds}>
+                  {book.odds_american > 0
+                    ? `+${book.odds_american}`
+                    : book.odds_american}
+                </Text>
+                <Text style={styles.bookImpliedProb} />
+              </View>
+            ))}
+          </>
+        )}
+
+      {data.best_available_odds && (
+        <>
+          <View style={styles.insightDivider} />
+          <View style={styles.bookOddRow}>
+            <Text style={styles.bestBookName}>
+              Best Available: {data.best_available_odds.book}
+            </Text>
+            <Text style={[styles.bestBookOdds, { marginLeft: "auto" }]}>
+              {data.best_available_odds.odds_american > 0
+                ? `+${data.best_available_odds.odds_american}`
+                : data.best_available_odds.odds_american}
+            </Text>
+          </View>
+        </>
+      )}
+
+      {data.analysis ? (
+        <>
+          <View style={styles.insightDivider} />
+          <Text style={styles.insightText}>{data.analysis}</Text>
+        </>
+      ) : null}
+    </GlassCard>
+  );
+};
+
+/* ---------------- Main Screen ---------------- */
 export default function Home({ navigation }) {
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [analysisResponse, setAnalysisResponse] = useState(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [products, setProducts] = useState([]);
   const [showSplash, setShowSplash] = useState(true);
+  const [evtSource, setEvtSource] = useState(null); // kept for parity
   const scrollViewRef = useRef(null);
+  const [oddsResults, setOddsResults] = useState({});
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [products, setProducts] = useState([]);
 
-  // Animation values for the analysis panel
+  // NEW: track true total and completed legs
+  const [totalLegs, setTotalLegs] = useState(null); // number | null
+  const [completedIds, setCompletedIds] = useState(new Set()); // Set<string>
+
+  // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  // Handle splash screen finish
-  const handleSplashFinish = () => {
-    setShowSplash(false);
-  };
+  const handleSplashFinish = () => setShowSplash(false);
 
   // Fetch products from RevenueCat when component mounts
   useEffect(() => {
@@ -293,9 +483,8 @@ export default function Home({ navigation }) {
     };
 
     checkSubscriptionStatus();
-  }, []);
+  }, []); // Empty dependency array means this effect runs once on mount
 
-  // Trigger animation when analysisResponse updates
   useEffect(() => {
     if (analysisResponse) {
       fadeAnim.setValue(0);
@@ -314,9 +503,16 @@ export default function Home({ navigation }) {
         }),
       ]).start();
     }
-  }, [analysisResponse]);
+  }, [analysisResponse, fadeAnim, slideAnim]);
 
-  // Image picker
+  useEffect(() => {
+    return () => {
+      try {
+        evtSource && evtSource.close();
+      } catch (e) {}
+    };
+  }, [evtSource]);
+
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -326,42 +522,44 @@ export default function Home({ navigation }) {
       );
       return;
     }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       aspect: [4, 3],
-      quality: 0.6,
+      quality: 0.8,
     });
-
     if (!result.canceled) {
       setImage(result.assets[0].uri);
       setAnalysisResponse(null);
     }
   };
 
-  // Function to strip triple backticks, etc.
-  function stripMarkdownCodeFence(str = "") {
-    let cleaned = str.trim();
+  /* ---------------- Upload image, then open SSE and stream results ---------------- */
 
-    if (cleaned.startsWith("```json")) {
-      cleaned = cleaned.replace(/^```json/, "");
-    } else if (cleaned.startsWith("```")) {
-      cleaned = cleaned.replace(/^```/, "");
-    }
-
-    if (cleaned.endsWith("```")) {
-      cleaned = cleaned.substring(0, cleaned.lastIndexOf("```"));
-    }
-
-    return cleaned.trim();
+  function createSSEParser(onEvent) {
+    let buffer = "";
+    let eventType = "message";
+    const flush = () => {
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop();
+      for (const frame of parts) {
+        const lines = frame.split("\n");
+        eventType = "message";
+        let data = "";
+        for (const line of lines) {
+          if (line.startsWith("event:")) eventType = line.slice(6).trim();
+          else if (line.startsWith("data:")) data += line.slice(5).trim();
+        }
+        onEvent(eventType, data);
+      }
+    };
+    return (chunk) => {
+      buffer += chunk;
+      flush();
+    };
   }
 
-  // Upload image & parse final JSON
   const uploadImage = async () => {
-    const customerInfo = await Purchases.getCustomerInfo();
-    const userId = customerInfo.originalAppUserId;
-
     if (!image) {
       Alert.alert("Please select an image first");
       return;
@@ -373,108 +571,264 @@ export default function Home({ navigation }) {
     }
 
     setUploading(true);
+    setAnalysisResponse(null);
+    setOddsResults({});
+    // reset totals
+    setTotalLegs(null);
+    setCompletedIds(new Set());
 
     try {
       const formData = new FormData();
-      const uriParts = image.split(".");
-      const fileType = uriParts[uriParts.length - 1];
 
-      formData.append("image", {
-        uri: image,
-        name: `photo.${fileType}`,
-        type: `image/${fileType}`,
-      });
-
-      formData.append("userId", userId);
-
-      const response = await fetch(`${API_URL}/analyzeCover`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const responseData = await response.json();
-
-      if (response.ok) {
-        let mergedData = {};
-
-        if (responseData.slipInfo) {
-          if (
-            typeof responseData.slipInfo === "string" &&
-            responseData.slipInfo.trim().startsWith("{")
-          ) {
-            try {
-              mergedData = JSON.parse(responseData.slipInfo);
-            } catch (error) {
-              console.error("JSON parsing error for slipInfo:", error);
-              mergedData = {
-                rawData: responseData.slipInfo,
-                _note: "Could not parse JSON data",
-              };
-            }
-          } else if (typeof responseData.slipInfo === "object") {
-            mergedData = responseData.slipInfo;
-          }
-        }
-
-        let parsedAnalysis = responseData.advancedAnalysis;
-        if (typeof parsedAnalysis === "string") {
-          const cleanedString = stripMarkdownCodeFence(parsedAnalysis);
-          try {
-            parsedAnalysis = JSON.parse(cleanedString);
-          } catch (error) {
-            console.error("Error parsing advancedAnalysis:", error);
-            parsedAnalysis = {};
-          }
-        } else if (typeof parsedAnalysis !== "object") {
-          parsedAnalysis = {};
-        }
-
-        mergedData = { ...mergedData, ...parsedAnalysis };
-
-        console.log("mergedData", mergedData);
-
-        setAnalysisResponse(mergedData);
-        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-      } else {
-        Alert.alert(
-          "Analysis Failed",
-          "Unable to process this bet slip. Please try a clearer image."
-        );
-        console.error("Upload failed", responseData);
-        setAnalysisResponse(null);
+      const uri = image;
+      let name = "slip.jpg";
+      let type = "image/jpeg";
+      const extMatch = uri
+        .toLowerCase()
+        .match(/\.(heic|heif|png|jpg|jpeg|webp)$/);
+      if (extMatch) {
+        const ext = extMatch[1];
+        name = `slip.${ext}`;
+        if (ext === "png") type = "image/png";
+        else if (ext === "webp") type = "image/webp";
+        else type = "image/jpeg";
       }
+
+      formData.append("image", { uri, name, type });
+
+      const url = `${API_URL}/analyzePartial`;
+      const xhr = new XMLHttpRequest();
+      let closed = false;
+
+      const handleEvent = (type, dataStr) => {
+        try {
+          const payload = dataStr ? JSON.parse(dataStr) : {};
+
+          if (type === "status") {
+            return;
+          }
+
+          if (type === "init") {
+            const total = Number(payload.total || 0);
+            setTotalLegs(total); // NEW: store true total
+            const imageUrl = payload.imageUrl;
+            const placeholders = Array.from({ length: total }, (_, i) => ({
+              id: `bet-${i}`,
+              teams: [],
+              bet_type: "",
+              odds: null,
+              detail: "Loading…",
+              probability: null,
+              parlay_question: "",
+              cover_question: "",
+              analysis: null,
+              cover_analysis: null,
+            }));
+            setAnalysisResponse({
+              imageUrl,
+              parlay_probability: null,
+              leagues: [{ league: "Loading", parlay_bets: placeholders }],
+              responsible_betting_reminder: "",
+            });
+            setUploading(false);
+            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+            return;
+          }
+
+          if (type === "bet") {
+            const { leagueIndex, betIndex, league, bet } = payload;
+            setAnalysisResponse((prev) => {
+              if (!prev) return prev;
+              const leagues = prev.leagues ? [...prev.leagues] : [];
+              while (leagues.length <= leagueIndex) {
+                leagues.push({ league: "Unknown", parlay_bets: [] });
+              }
+              const lg = { ...leagues[leagueIndex] };
+              lg.league = league || lg.league || "MLB";
+              const bets = lg.parlay_bets ? [...lg.parlay_bets] : [];
+
+              const calculatedIndividualProbability = Number.isFinite(bet?.odds)
+                ? calculateImpliedProbability(bet.odds)
+                : normalizePct(bet?.probability);
+
+              const updatedBet = {
+                ...bet,
+                teams: normalizeTeams(bet.teams),
+                probability: calculatedIndividualProbability,
+              };
+
+              const existingBetIndex = bet.id
+                ? bets.findIndex((b) => b.id === bet.id)
+                : -1;
+
+              if (existingBetIndex !== -1) {
+                bets[existingBetIndex] = {
+                  ...bets[existingBetIndex],
+                  ...updatedBet,
+                };
+              } else {
+                while (bets.length <= betIndex) bets.push({});
+                bets[betIndex] = { ...bets[betIndex], ...updatedBet };
+              }
+
+              // NEW: mark completed if this payload includes analysis
+              if (updatedBet?.analysis) {
+                const key = updatedBet.id ?? `${leagueIndex}-${betIndex}`;
+                setCompletedIds((prevSet) => {
+                  const next = new Set(prevSet);
+                  next.add(String(key));
+                  return next;
+                });
+              }
+
+              lg.parlay_bets = bets;
+              leagues[leagueIndex] = lg;
+              return { ...prev, leagues };
+            });
+            return;
+          }
+
+          if (type === "odds") {
+            const { matchup, books_considered, best_available_odds, analysis } =
+              payload;
+            if (matchup) {
+              setOddsResults((prev) => ({
+                ...prev,
+                [matchup]: {
+                  books_considered: books_considered || [],
+                  best_available_odds: best_available_odds || null,
+                  analysis: analysis || "",
+                },
+              }));
+            }
+            return;
+          }
+
+          if (type === "final") {
+            if (payload && payload.slipInfo) {
+              const normalizedFinal = {
+                ...payload.slipInfo,
+                leagues: (payload.slipInfo.leagues || []).map((lg) => ({
+                  ...lg,
+                  parlay_bets: (lg.parlay_bets || []).map((b) => {
+                    const teams = normalizeTeams(b.teams);
+                    let prob = Number.isFinite(b?.odds)
+                      ? calculateImpliedProbability(b.odds)
+                      : normalizePct(b?.probability);
+                    return { ...b, teams, probability: prob };
+                  }),
+                })),
+              };
+
+              // NEW: rebuild completed set from final payload to guarantee accuracy
+              try {
+                const finalCompleted = new Set();
+                (normalizedFinal.leagues || []).forEach((lg, li) => {
+                  (lg.parlay_bets || []).forEach((b, bi) => {
+                    if (b?.analysis) {
+                      const key = b.id ?? `${li}-${bi}`;
+                      finalCompleted.add(String(key));
+                    }
+                  });
+                });
+                setCompletedIds(finalCompleted);
+                if (typeof payload?.slipInfo?.total === "number") {
+                  setTotalLegs(payload.slipInfo.total);
+                }
+              } catch {}
+
+              const allBets = normalizedFinal.leagues.flatMap(
+                (league) => league.parlay_bets || []
+              );
+              const calculatedParlayProbability =
+                calculateParlayProbability(allBets);
+
+              setAnalysisResponse({
+                ...normalizedFinal,
+                parlay_probability:
+                  calculatedParlayProbability != null
+                    ? calculatedParlayProbability
+                    : null,
+              });
+            }
+            if (!closed) {
+              closed = true;
+              try {
+                xhr.abort();
+              } catch {}
+            }
+            return;
+          }
+
+          if (type === "error") {
+            if (!closed) {
+              closed = true;
+              try {
+                xhr.abort();
+              } catch {}
+            }
+            setUploading(false);
+            Alert.alert("Analysis failed", payload?.message || "Unknown error");
+            return;
+          }
+        } catch (e) {
+          console.log("SSE parse error:", e);
+        }
+      };
+
+      const onChunk = createSSEParser(handleEvent);
+      xhr.onreadystatechange = () => {};
+      let lastIndex = 0;
+      xhr.onprogress = () => {
+        const text = xhr.responseText || "";
+        const next = text.slice(lastIndex);
+        lastIndex = text.length;
+        if (next) onChunk(next);
+      };
+      xhr.onerror = () => {
+        if (!closed) {
+          closed = true;
+          setUploading(false);
+          Alert.alert("Connection Error", "Please try again.");
+        }
+      };
+
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Accept", "text/event-stream");
+      xhr.send(formData);
     } catch (error) {
-      Alert.alert(
-        "Connection Error",
-        "Please check your internet connection and try again."
-      );
       console.error("Upload error:", error);
       setAnalysisResponse(null);
-    } finally {
       setUploading(false);
+      Alert.alert(
+        "Connection Error",
+        "Please check your internet and try again."
+      );
     }
   };
 
-  // Clear everything
   const resetAnalysis = () => {
     setImage(null);
     setAnalysisResponse(null);
+    setOddsResults({});
+    setTotalLegs(null);
+    setCompletedIds(new Set());
   };
 
-  // Enhanced probability indicator with glassmorphism
   const renderProbabilityIndicator = (probability) => {
     if (probability === undefined || probability === null) return null;
+    const pct = normalizePct(probability);
+    if (pct == null) return null;
 
     let color = "#FF4D4F";
     let message = "High Risk";
     let gradientColors = ["#FF4D4F", "#FF7875"];
-
-    if (probability > 30) {
+    if (pct > 30) {
       color = "#FAAD14";
       message = "Medium Risk";
       gradientColors = ["#FAAD14", "#FFC53D"];
     }
-    if (probability > 60) {
+    if (pct > 60) {
       color = "#54FF00";
       message = "Good Odds";
       gradientColors = ["#54FF00", "#73FF33"];
@@ -483,10 +837,11 @@ export default function Home({ navigation }) {
     return (
       <View style={styles.probabilityIndicator}>
         <View style={styles.probabilityHeader}>
-          <Text style={styles.probabilityValue}>{probability.toFixed(1)}%</Text>
+          <Text style={[styles.probabilityValue, { color }]}>
+            {pct.toFixed(1)}%
+          </Text>
           <Text style={[styles.probabilityMessage, { color }]}>{message}</Text>
         </View>
-
         <View style={styles.indicatorBarContainer}>
           <View style={styles.indicatorBar}>
             <LinearGradient
@@ -495,7 +850,7 @@ export default function Home({ navigation }) {
               end={{ x: 1, y: 0 }}
               style={[
                 styles.indicatorFill,
-                { width: `${Math.min(probability, 100)}%` },
+                { width: `${Math.min(pct, 100)}%` },
               ]}
             />
           </View>
@@ -504,18 +859,17 @@ export default function Home({ navigation }) {
     );
   };
 
-  // Enhanced bet probability with micro-animations
-  const renderBetProbability = (probability) => {
-    if (probability === undefined || probability === null) return null;
+  const renderBetProbability = (probabilityIn) => {
+    const pct = normalizePct(probabilityIn);
+    if (pct == null) return null;
 
     let color = "#FF4D4F";
     let gradientColors = ["#FF4D4F", "#FF7875"];
-
-    if (probability > 30) {
+    if (pct > 30) {
       color = "#FAAD14";
       gradientColors = ["#FAAD14", "#FFC53D"];
     }
-    if (probability > 60) {
+    if (pct > 60) {
       color = "#54FF00";
       gradientColors = ["#54FF00", "#73FF33"];
     }
@@ -527,75 +881,48 @@ export default function Home({ navigation }) {
             colors={gradientColors}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={[
-              styles.betProbabilityFill,
-              { width: `${Math.min(probability, 100)}%` },
-            ]}
+            style={[styles.betProbabilityFill, { width: `${pct}%` }]}
           />
         </View>
         <Text style={[styles.betProbabilityValue, { color }]}>
-          {probability.toFixed(1)}%
+          {pct.toFixed(1)}%
         </Text>
       </View>
     );
   };
 
-  // Enhanced parlay analysis with glassmorphism
+  /* ---------------- Main analysis renderer ---------------- */
   const renderParlayAnalysis = () => {
     if (!analysisResponse) return null;
 
-    const {
-      stake,
-      parlay_odds,
-      parlay_probability,
-      parlay_summary,
-      leagues,
-      responsible_betting_reminder,
-    } = analysisResponse;
+    const { parlay_probability, leagues, responsible_betting_reminder } =
+      analysisResponse;
 
     return (
       <Animated.View
         style={[
           styles.slipInfoWrapper,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        {/* Header with glassmorphism */}
-        {/* <GlassCard style={styles.analysisHeader}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <MaterialCommunityIcons
-                name="chart-line"
-                size={24}
-                color="#54FF00"
-              />
-              <Text style={styles.slipInfoTitle}>Bet Analysis</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.newAnalysisButton}
-              onPress={resetAnalysis}
-            >
-              <Ionicons name="refresh" size={16} color="#54FF00" />
-              <Text style={styles.newAnalysisText}>New Analysis</Text>
-            </TouchableOpacity>
-          </View>
-        </GlassCard> */}
-
-        {/* Probability Card with enhanced glassmorphism */}
         <GlassCard style={styles.probabilityCard}>
           <Text style={styles.probabilityCardTitle}>Win Probability</Text>
-          {renderProbabilityIndicator(parlay_probability)}
-
-          <TouchableOpacity style={styles.clearButton} onPress={resetAnalysis}>
+          {parlay_probability !== null && parlay_probability !== undefined ? (
+            renderProbabilityIndicator(parlay_probability)
+          ) : (
+            <View style={{ paddingVertical: 8, marginBottom: 10 }}>
+              <ActivityIndicator color="#54FF00" />
+            </View>
+          )}
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={resetAnalysis}
+          >
             <Ionicons name="trash-outline" size={18} color="#FF4D4F" />
-            <Text style={styles.clearButtonText}>Remove Slip</Text>
+            <Text style={styles.secondaryButtonText}>Remove Slip</Text>
           </TouchableOpacity>
         </GlassCard>
 
-        {/* Bet Details Section */}
         <Text style={styles.sectionTitle}>Bet Details</Text>
 
         {leagues &&
@@ -605,11 +932,11 @@ export default function Home({ navigation }) {
                 <View style={styles.leagueIconContainer}>
                   <MaterialCommunityIcons
                     name={
-                      league.league?.toLowerCase().includes("nba")
+                      (league.league || "").toLowerCase().includes("nba")
                         ? "basketball"
-                        : league.league?.toLowerCase().includes("nfl")
+                        : (league.league || "").toLowerCase().includes("nfl")
                         ? "football"
-                        : league.league?.toLowerCase().includes("mlb")
+                        : (league.league || "").toLowerCase().includes("mlb")
                         ? "baseball"
                         : "trophy"
                     }
@@ -617,120 +944,167 @@ export default function Home({ navigation }) {
                     color="#54FF00"
                   />
                 </View>
-                <Text style={styles.leagueTitle}>{league.league}</Text>
+                <Text style={styles.leagueTitle}>
+                  {league.league || "Loading"}
+                </Text>
               </View>
 
-              {league.parlay_bets &&
-                league.parlay_bets.map((bet, betIdx) => (
-                  <View key={`bet-${betIdx}`} style={styles.betContainer}>
-                    {/* Bet Header */}
-                    <View style={styles.betHeader}>
-                      <Text style={styles.betDetail}>
-                        {bet.detail || "N/A"}
-                      </Text>
-                      <View style={styles.oddsTag}>
-                        <Text style={styles.oddsText}>
-                          {bet.odds && bet.odds > 0 ? `+${bet.odds}` : bet.odds}
-                        </Text>
-                      </View>
-                    </View>
+              {/* Completed-only list (arrival order) */}
+              {(() => {
+                const allBets = Array.isArray(league.parlay_bets)
+                  ? league.parlay_bets.filter(Boolean)
+                  : [];
+                const completed = allBets.filter((b) => b && b.analysis);
 
-                    {/* Teams Info */}
-                    {bet.teams && (
-                      <View style={styles.betInfoRow}>
-                        <Ionicons name="people" size={16} color="#54FF00" />
-                        <Text style={styles.betInfoValue}>
-                          {bet.teams.join(" vs ")}
-                        </Text>
-                      </View>
-                    )}
+                return (
+                  <>
+                    {completed.map((bet, betIdx) => {
+                      const teams = normalizeTeams(bet?.teams);
+                      const matchup = getMatchupKey(bet);
+                      const inlineOddsData = oddsResults?.[matchup];
 
-                    {/* Probability */}
-                    {bet.probability !== undefined &&
-                      renderBetProbability(bet.probability)}
+                      return (
+                        <View
+                          key={
+                            bet.id ||
+                            `${idx}-${betIdx}-${matchup || bet.detail || "bet"}`
+                          }
+                          style={styles.betContainer}
+                        >
+                          <View style={styles.betHeader}>
+                            <Text style={styles.betDetail}>
+                              {bet.detail || "N/A"}
+                            </Text>
+                            <View style={styles.oddsTag}>
+                              <Text style={styles.oddsText}>
+                                {bet.odds && Number(bet.odds) > 0
+                                  ? `+${bet.odds}`
+                                  : bet.odds ?? "—"}
+                              </Text>
+                            </View>
+                          </View>
 
-                    {/* Enhanced Insights Card */}
-                    <GlassCard style={styles.insightsCard}>
-                      {/* Cover Rate */}
-                      <View style={styles.insightRow}>
-                        <View style={styles.insightIconContainer}>
-                          <Ionicons
-                            name="trending-up"
-                            size={18}
-                            color="#54FF00"
-                          />
+                          {!!teams.length && (
+                            <View style={styles.betInfoRow}>
+                              <Ionicons
+                                name="people"
+                                size={16}
+                                color="#54FF00"
+                              />
+                              <Text style={styles.betInfoValue}>
+                                {teams.join(" vs ")}
+                              </Text>
+                            </View>
+                          )}
+
+                          {bet.probability != null
+                            ? renderBetProbability(bet.probability)
+                            : null}
+
+                          <GlassCard style={styles.insightsCard}>
+                            <View style={styles.insightRow}>
+                              <View style={styles.insightIconContainer}>
+                                <Ionicons
+                                  name="trending-up"
+                                  size={18}
+                                  color="#54FF00"
+                                />
+                              </View>
+                              <View style={styles.insightContent}>
+                                <Text style={styles.insightLabel}>
+                                  Cover Rate
+                                </Text>
+                                <Text style={styles.insightText}>
+                                  {bet.cover_analysis?.key_stat ||
+                                    "No cover data available"}
+                                </Text>
+                              </View>
+                            </View>
+
+                            <View style={styles.insightDivider} />
+
+                            <View style={styles.insightRow}>
+                              <View style={styles.insightIconContainer}>
+                                <Ionicons
+                                  name="bulb"
+                                  size={18}
+                                  color="#54FF00"
+                                />
+                              </View>
+                              <View style={styles.insightContent}>
+                                <Text style={styles.insightLabel}>
+                                  Key Insight
+                                </Text>
+                                <Text style={styles.insightText}>
+                                  {bet.analysis?.key_stat ||
+                                    "No insight available"}
+                                </Text>
+                              </View>
+                            </View>
+
+                            <View style={styles.insightDivider} />
+
+                            <View style={styles.insightRow}>
+                              <View style={styles.insightIconContainer}>
+                                <Ionicons
+                                  name="analytics"
+                                  size={18}
+                                  color="#54FF00"
+                                />
+                              </View>
+                              <View style={styles.insightContent}>
+                                <Text style={styles.insightLabel}>Matchup</Text>
+                                <Text style={styles.insightText}>
+                                  {bet.analysis?.matchup_consideration ||
+                                    "No matchup info available"}
+                                </Text>
+                              </View>
+                            </View>
+                          </GlassCard>
+
+                          <InlineOdds matchup={matchup} data={inlineOddsData} />
+
+                          <View style={styles.betFooter}>
+                            <View style={styles.betTypeTag}>
+                              <Text style={styles.betTypeText}>
+                                {bet.bet_type || "N/A"}
+                              </Text>
+                            </View>
+                          </View>
                         </View>
-                        <View style={styles.insightContent}>
-                          <Text style={styles.insightLabel}>Cover Rate</Text>
-                          <Text style={styles.insightText}>
-                            {bet.cover_analysis && bet.cover_analysis.key_stat
-                              ? bet.cover_analysis.key_stat
-                              : "No cover data available"}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.insightDivider} />
-
-                      {/* Key Insight */}
-                      <View style={styles.insightRow}>
-                        <View style={styles.insightIconContainer}>
-                          <Ionicons name="bulb" size={18} color="#54FF00" />
-                        </View>
-                        <View style={styles.insightContent}>
-                          <Text style={styles.insightLabel}>Key Insight</Text>
-                          <Text style={styles.insightText}>
-                            {bet.analysis && bet.analysis.key_stat
-                              ? bet.analysis.key_stat
-                              : "No insight available"}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.insightDivider} />
-
-                      {/* Matchup Info */}
-                      <View style={styles.insightRow}>
-                        <View style={styles.insightIconContainer}>
-                          <Ionicons
-                            name="analytics"
-                            size={18}
-                            color="#54FF00"
-                          />
-                        </View>
-                        <View style={styles.insightContent}>
-                          <Text style={styles.insightLabel}>Matchup</Text>
-                          <Text style={styles.insightText}>
-                            {bet.analysis && bet.analysis.matchup_consideration
-                              ? bet.analysis.matchup_consideration
-                              : "No matchup info available"}
-                          </Text>
-                        </View>
-                      </View>
-                    </GlassCard>
-
-                    {/* Bet Type Footer */}
-                    <View style={styles.betFooter}>
-                      <View style={styles.betTypeTag}>
-                        <Text style={styles.betTypeText}>
-                          {bet.bet_type || "N/A"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                ))}
+                      );
+                    })}
+                  </>
+                );
+              })()}
             </GlassCard>
           ))}
 
-        {/* Responsible Betting */}
-        {responsible_betting_reminder && (
+        {/* GLOBAL pending loader: bottom of all content */}
+        {(() => {
+          // Prefer totalLegs from init/final; fall back to distinct slots seen.
+          let total = totalLegs ?? 0;
+          if (!total) {
+            const slots = new Set();
+            (leagues || []).forEach((lg, li) => {
+              (lg.parlay_bets || []).forEach((_, bi) =>
+                slots.add(`${li}-${bi}`)
+              );
+            });
+            total = slots.size;
+          }
+          const pending = Math.max(0, total - completedIds.size);
+          return pending > 0 ? <PendingLoader count={pending} /> : null;
+        })()}
+
+        {responsible_betting_reminder ? (
           <GlassCard style={styles.disclaimer}>
             <Ionicons name="information-circle" size={20} color="#54FF00" />
             <Text style={styles.disclaimerText}>
               {responsible_betting_reminder}
             </Text>
           </GlassCard>
-        )}
+        ) : null}
       </Animated.View>
     );
   };
@@ -744,7 +1118,7 @@ export default function Home({ navigation }) {
         <>
           <FloatingElements />
 
-          {/* Enhanced Header */}
+          {/* Header */}
           <GlassCard style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.logoContainer}>
@@ -758,9 +1132,10 @@ export default function Home({ navigation }) {
                 <Text style={styles.appTagline}>AI-Powered Bet Analysis</Text>
               </View>
             </View>
+
             <TouchableOpacity
               style={styles.profileButton}
-              onPress={() => navigation.navigate("Profile")}
+              onPress={() => navigation?.navigate?.("Profile")}
             >
               <Ionicons name="person-circle" size={28} color="#54FF00" />
             </TouchableOpacity>
@@ -773,7 +1148,6 @@ export default function Home({ navigation }) {
             showsVerticalScrollIndicator={false}
           >
             {!image ? (
-              // Enhanced Upload Section
               <View style={styles.uploadSection}>
                 <GlassCard style={styles.uploadCard}>
                   <View style={styles.uploadIconContainer}>
@@ -788,12 +1162,10 @@ export default function Home({ navigation }) {
                       />
                     </LinearGradient>
                   </View>
-
                   <Text style={styles.uploadTitle}>Upload Your Bet Slip</Text>
                   <Text style={styles.uploadDescription}>
                     Select an image of your bet slip for AI-powered analysis
                   </Text>
-
                   <TouchableOpacity
                     style={styles.uploadButton}
                     onPress={pickImage}
@@ -816,7 +1188,6 @@ export default function Home({ navigation }) {
               </View>
             ) : null}
 
-            {/* Enhanced Image Preview */}
             {image && !(analysisResponse?.leagues?.length > 0) && (
               <View style={styles.analysisSection}>
                 <GlassCard style={styles.imageContainer}>
@@ -879,6 +1250,11 @@ export default function Home({ navigation }) {
                       style={styles.secondaryButton}
                       onPress={resetAnalysis}
                     >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#FF4D4F"
+                      />
                       <Text style={styles.secondaryButtonText}>
                         Remove Slip
                       </Text>
@@ -888,11 +1264,11 @@ export default function Home({ navigation }) {
               </View>
             )}
 
-            {/* Render Analysis */}
+            {/* Results */}
             {renderParlayAnalysis()}
           </ScrollView>
 
-          {/* Enhanced Loading Modal */}
+          {/* Loading Modal */}
           <Modal visible={uploading} transparent animationType="fade">
             <View style={styles.modalContainer}>
               <GlassCard style={styles.modalContent}>
@@ -906,13 +1282,12 @@ export default function Home({ navigation }) {
                 <Text style={styles.modalSubText}>
                   Analysis may take longer for parlays with more legs.
                 </Text>
-
                 <View style={styles.modalLoader}>
-                  <View style={styles.loaderDots}>
+                  {/* <View className="loaderDots">
                     {[0, 1, 2].map((i) => (
                       <View key={i} style={styles.loaderDot} />
                     ))}
-                  </View>
+                  </View> */}
                 </View>
               </GlassCard>
             </View>
@@ -923,13 +1298,10 @@ export default function Home({ navigation }) {
   );
 }
 
+/* ---------------- Styles ---------------- */
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#101113",
-  },
+  safeArea: { flex: 1, backgroundColor: "#101113" },
 
-  // Floating Elements
   floatingElements: {
     position: "absolute",
     width: "100%",
@@ -945,7 +1317,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
-  // Glassmorphism Card
   glassCard: {
     backgroundColor: "rgba(26, 24, 27, 0.8)",
     borderRadius: 24,
@@ -955,29 +1326,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
-    backdropFilter: "blur(10px)",
   },
 
-  // Splash Screen Styles
   splashContainer: {
     position: "absolute",
-    width: width,
-    height: height,
+    width,
+    height,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#101113",
     zIndex: 1000,
   },
-  splashLogoContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  splashLogoImage: {
-    width: 80,
-    height: 80,
-    marginBottom: 24,
-    zIndex: 2,
-  },
+  splashLogoContainer: { alignItems: "center", justifyContent: "center" },
+  splashLogoImage: { width: 80, height: 80, marginBottom: 24, zIndex: 2 },
   logoGlow: {
     position: "absolute",
     width: 120,
@@ -1003,9 +1364,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 40,
   },
-  splashLoader: {
-    marginTop: 40,
-  },
+  splashLoader: { marginTop: 40 },
   loaderDots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -1020,7 +1379,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
-  // Header Styles
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -1032,17 +1390,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     zIndex: 10,
   },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
+  headerLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   logoContainer: {
     width: 44,
     height: 44,
@@ -1054,10 +1402,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(84, 255, 0, 0.2)",
   },
-  logoImage: {
-    width: 24,
-    height: 24,
-  },
+  logoImage: { width: 24, height: 24 },
   appTitle: {
     fontSize: 24,
     fontWeight: "800",
@@ -1081,31 +1426,17 @@ const styles = StyleSheet.create({
     borderColor: "rgba(84, 255, 0, 0.2)",
   },
 
-  // Scroll View
-  scrollView: {
-    flex: 1,
-    zIndex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+  scrollView: { flex: 1, zIndex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
 
-  // Upload Section
   uploadSection: {
     alignItems: "center",
     justifyContent: "center",
     minHeight: 500,
     marginTop: 40,
   },
-  uploadCard: {
-    width: "100%",
-    padding: 40,
-    alignItems: "center",
-  },
-  uploadIconContainer: {
-    marginBottom: 32,
-  },
+  uploadCard: { width: "100%", padding: 40, alignItems: "center" },
+  uploadIconContainer: { marginBottom: 32 },
   uploadIconGradient: {
     width: 80,
     height: 80,
@@ -1129,11 +1460,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     paddingHorizontal: 20,
   },
-  uploadButton: {
-    width: "100%",
-    borderRadius: 16,
-    overflow: "hidden",
-  },
+  uploadButton: { width: "100%", borderRadius: 16, overflow: "hidden" },
   uploadButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
@@ -1149,10 +1476,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Analysis Section
-  analysisSection: {
-    marginBottom: 20,
-  },
+  analysisSection: { marginBottom: 20 },
   imageContainer: {
     width: "100%",
     borderRadius: 20,
@@ -1167,11 +1491,7 @@ const styles = StyleSheet.create({
     aspectRatio: 4 / 3,
     borderRadius: 20,
   },
-  imageOverlay: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-  },
+  imageOverlay: { position: "absolute", top: 16, right: 16 },
   changeImageButton: {
     width: 40,
     height: 40,
@@ -1182,11 +1502,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(84, 255, 0, 0.3)",
   },
-  analyzeButton: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 16,
-  },
+
+  analyzeButton: { borderRadius: 16, overflow: "hidden", marginBottom: 16 },
   analyzeButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
@@ -1194,9 +1511,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 32,
   },
-  analyzeButtonDisabled: {
-    opacity: 0.6,
-  },
+  analyzeButtonDisabled: { opacity: 0.6 },
   analyzeButtonText: {
     color: "#101113",
     fontSize: 17,
@@ -1204,16 +1519,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     letterSpacing: 0.3,
   },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  loadingContainer: { flexDirection: "row", alignItems: "center" },
   loadingText: {
     color: "#54FF00",
     marginLeft: 12,
     fontWeight: "600",
     fontSize: 16,
   },
+
   secondaryButton: {
     backgroundColor: "rgba(26, 24, 27, 0.8)",
     padding: 18,
@@ -1229,20 +1542,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Analysis Results
-  slipInfoWrapper: {
-    marginTop: 32,
-    width: "100%",
-  },
-  analysisHeader: {
-    marginBottom: 20,
-    padding: 20,
-  },
-  probabilityCard: {
-    padding: 24,
-    marginBottom: 24,
-    bottom: 15,
-  },
+  slipInfoWrapper: { marginTop: 32, width: "100%" },
+  probabilityCard: { padding: 24, marginBottom: 24, bottom: 15 },
   probabilityCardTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -1251,10 +1552,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 0.5,
   },
-  probabilityIndicator: {
-    width: "100%",
-    marginBottom: 24,
-  },
+
+  probabilityIndicator: { width: "100%", marginBottom: 24 },
   probabilityHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1267,60 +1566,16 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     letterSpacing: 0.5,
   },
-  probabilityMessage: {
-    fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: 0.3,
-  },
-  indicatorBarContainer: {
-    width: "100%",
-  },
+  probabilityMessage: { fontSize: 16, fontWeight: "600", letterSpacing: 0.3 },
+  indicatorBarContainer: { width: "100%" },
   indicatorBar: {
     height: 12,
     borderRadius: 6,
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     overflow: "hidden",
   },
-  indicatorFill: {
-    height: "100%",
-    borderRadius: 6,
-  },
-  clearButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255, 77, 79, 0.1)",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 77, 79, 0.3)",
-  },
-  clearButtonText: {
-    color: "#FF4D4F",
-    fontSize: 15,
-    fontWeight: "600",
-    marginLeft: 8,
-    letterSpacing: 0.3,
-  },
-  newAnalysisButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "rgba(84, 255, 0, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(84, 255, 0, 0.3)",
-  },
-  newAnalysisText: {
-    color: "#54FF00",
-    fontSize: 13,
-    fontWeight: "600",
-    marginLeft: 6,
-    letterSpacing: 0.3,
-  },
+  indicatorFill: { height: "100%", borderRadius: 6 },
 
-  // Section Titles
   sectionTitle: {
     fontSize: 24,
     fontWeight: "700",
@@ -1328,20 +1583,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     letterSpacing: 0.5,
   },
-  slipInfoTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#ffffff",
-    letterSpacing: 0.5,
-    marginLeft: 10,
-  },
 
-  // League Cards
-  leagueCard: {
-    marginBottom: 20,
-    padding: 0,
-    overflow: "hidden",
-  },
+  leagueCard: { marginBottom: 20, padding: 0, overflow: "hidden" },
   leagueHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1368,7 +1611,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Bet Container
   betContainer: {
     padding: 20,
     borderBottomWidth: 1,
@@ -1388,17 +1630,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
     letterSpacing: 0.3,
   },
-  betInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
+
+  betInfoRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   betInfoValue: {
     fontSize: 15,
     color: "rgba(255, 255, 255, 0.8)",
     marginLeft: 8,
     fontWeight: "500",
   },
+
   oddsTag: {
     backgroundColor: "rgba(84, 255, 0, 0.1)",
     paddingVertical: 6,
@@ -1414,11 +1654,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Bet Probability
-  betProbabilityContainer: {
-    marginVertical: 16,
-    width: "100%",
-  },
+  betProbabilityContainer: { marginVertical: 16, width: "100%" },
   betProbabilityBar: {
     height: 10,
     borderRadius: 5,
@@ -1426,10 +1662,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 8,
   },
-  betProbabilityFill: {
-    height: "100%",
-    borderRadius: 5,
-  },
+  betProbabilityFill: { height: "100%", borderRadius: 5 },
   betProbabilityValue: {
     fontSize: 13,
     fontWeight: "600",
@@ -1437,7 +1670,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Insights Card
   insightsCard: {
     marginTop: 16,
     padding: 16,
@@ -1460,9 +1692,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  insightContent: {
-    flex: 1,
-  },
+  insightContent: { flex: 1 },
   insightLabel: {
     fontWeight: "700",
     fontSize: 14,
@@ -1483,11 +1713,7 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
 
-  // Bet Footer
-  betFooter: {
-    flexDirection: "row",
-    marginTop: 16,
-  },
+  betFooter: { flexDirection: "row", marginTop: 16 },
   betTypeTag: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     paddingVertical: 6,
@@ -1503,7 +1729,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Disclaimer
   disclaimer: {
     flexDirection: "row",
     alignItems: "center",
@@ -1518,22 +1743,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Modal Styles
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(16, 17, 19, 0.95)",
   },
-  modalContent: {
-    alignItems: "center",
-    padding: 40,
-    margin: 20,
-  },
-  lottie: {
-    width: 200,
-    height: 200,
-  },
+  modalContent: { alignItems: "center", padding: 40, margin: 20 },
+  lottie: { width: 200, height: 200 },
   modalText: {
     color: "#ffffff",
     fontSize: 20,
@@ -1549,7 +1766,78 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-  modalLoader: {
-    marginTop: 24,
+  modalLoader: { marginTop: 24 },
+
+  oddsComparisonContainer: { marginTop: 32, width: "100%" },
+  oddsCard: {
+    marginBottom: 20,
+    padding: 20,
+    backgroundColor: "rgba(16, 17, 19, 0.6)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(84, 255, 0, 0.1)",
+  },
+  oddsMatchupTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
+  booksConsideredContainer: { marginBottom: 16 },
+  booksConsideredTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.8)",
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  bookOddRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  bookName: {
+    fontSize: 15,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
+  bookOdds: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#54FF00",
+    letterSpacing: 0.3,
+  },
+  bookImpliedProb: {
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.6)",
+    letterSpacing: 0.3,
+  },
+  bestOddsContainer: { marginBottom: 16 },
+  bestOddsLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.8)",
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  bestBookName: {
+    fontSize: 15,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  bestBookOdds: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#54FF00",
+    letterSpacing: 0.3,
+  },
+  bestBookImpliedProb: {
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.6)",
+    letterSpacing: 0.3,
   },
 });
