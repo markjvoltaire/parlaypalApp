@@ -7,8 +7,8 @@ import Home from "./Screens/Home";
 export default function App() {
   return (
     <NavigationContainer>
-      <Auth />
-      {/* <Home /> */}
+      {/* <Auth /> */}
+      <Home />
     </NavigationContainer>
   );
 }

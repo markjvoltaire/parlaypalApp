@@ -560,6 +560,9 @@ export default function Home({ navigation }) {
   }
 
   const uploadImage = async () => {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const userId = customerInfo.originalAppUserId;
+
     if (!image) {
       Alert.alert("Please select an image first");
       return;
@@ -595,6 +598,7 @@ export default function Home({ navigation }) {
       }
 
       formData.append("image", { uri, name, type });
+      formData.append("userId", userId);
 
       const url = `${API_URL}/analyzePartial`;
       const xhr = new XMLHttpRequest();
