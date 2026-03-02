@@ -1,7 +1,10 @@
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 import Home from "../Screens/Home";
+import Explore from "../Screens/Explore";
 import Profile from "../Screens/Profile";
 import Help from "../Screens/Help";
 import Privacy from "../Screens/Privacy";
@@ -19,6 +22,60 @@ import Email from "../Screens/Email";
 import NotificationsScreen from "../Screens/NotificationScreen";
 import OfferTrial from "../Screens/OfferTrial";
 import Why from "../Screens/Why";
+import Discord from "../Screens/Discord";
+import { ExploreDataProvider } from "../contexts/ExploreDataContext";
+
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <ExploreDataProvider>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: "#54FF00",
+        tabBarInactiveTintColor: "rgba(255,255,255,0.5)",
+        tabBarStyle: {
+          backgroundColor: "#101113",
+          borderTopColor: "rgba(84, 255, 0, 0.2)",
+        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={Home}
+        options={{
+          tabBarLabel: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Explore"
+        component={Explore}
+        options={{
+          tabBarLabel: "Explore",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="compass" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={Profile}
+        options={{
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+    </ExploreDataProvider>
+  );
+}
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
@@ -75,11 +132,11 @@ export default function Auth() {
 
         // Set initial screen based on subscription and onboarding status
         if (isSubscribedUser) {
-          setInitialScreen("Home");
+          setInitialScreen("MainTabs");
         } else if (!completedOnboarding) {
           setInitialScreen("Welcome");
         } else {
-          setInitialScreen("Home");
+          setInitialScreen("MainTabs");
         }
 
         // Fetch available products
@@ -133,16 +190,9 @@ export default function Auth() {
       initialRouteName={initialScreen}
     >
       <Stack.Screen
-        name="Home"
-        component={Home}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Chat",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
-          gestureEnabled: false,
-        })}
+        name="MainTabs"
+        component={MainTabs}
+        options={{ gestureEnabled: false }}
       />
 
       <Stack.Screen
@@ -228,18 +278,6 @@ export default function Auth() {
       />
 
       <Stack.Screen
-        name="Profile"
-        component={Profile}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Profile",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerShown: false,
-        })}
-      />
-
-      <Stack.Screen
         name="Help"
         component={Help}
         options={({ route }) => ({
@@ -286,6 +324,17 @@ export default function Auth() {
       <Stack.Screen
         name="Why"
         component={Why}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Discord"
+        component={Discord}
         options={({ route }) => ({
           tabBarVisible: false,
           headerBackTitle: "Back",

@@ -99,7 +99,7 @@ const Why = ({ route, navigation }) => {
       }),
     ]).start();
 
-    navigation.navigate("OfferTrial", { email, userId });
+    navigation.navigate("Discord", { email, userId });
   };
 
   return (

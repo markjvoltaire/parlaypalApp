@@ -35,7 +35,7 @@ const FloatingElements = () => {
         toValue: 1,
         duration: 8000,
         useNativeDriver: true,
-      })
+      }),
     ).start();
   }, [animatedValue]);
   return (
@@ -140,7 +140,7 @@ const SplashScreen = ({ onFinish }) => {
           duration: 2000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
 
     const timer = setTimeout(() => {
@@ -518,7 +518,7 @@ export default function Home({ navigation }) {
     if (status !== "granted") {
       Alert.alert(
         "Permission Required",
-        "Parlay Pal needs access to your photo library to upload a bet slip."
+        "Parlay Pal needs access to your photo library to upload a bet slip.",
       );
       return;
     }
@@ -742,7 +742,7 @@ export default function Home({ navigation }) {
               } catch {}
 
               const allBets = normalizedFinal.leagues.flatMap(
-                (league) => league.parlay_bets || []
+                (league) => league.parlay_bets || [],
               );
               const calculatedParlayProbability =
                 calculateParlayProbability(allBets);
@@ -806,7 +806,7 @@ export default function Home({ navigation }) {
       setUploading(false);
       Alert.alert(
         "Connection Error",
-        "Please check your internet and try again."
+        "Please check your internet and try again.",
       );
     }
   };
@@ -939,10 +939,10 @@ export default function Home({ navigation }) {
                       (league.league || "").toLowerCase().includes("nba")
                         ? "basketball"
                         : (league.league || "").toLowerCase().includes("nfl")
-                        ? "football"
-                        : (league.league || "").toLowerCase().includes("mlb")
-                        ? "baseball"
-                        : "trophy"
+                          ? "football"
+                          : (league.league || "").toLowerCase().includes("mlb")
+                            ? "baseball"
+                            : "trophy"
                     }
                     size={20}
                     color="#54FF00"
@@ -983,7 +983,7 @@ export default function Home({ navigation }) {
                               <Text style={styles.oddsText}>
                                 {bet.odds && Number(bet.odds) > 0
                                   ? `+${bet.odds}`
-                                  : bet.odds ?? "—"}
+                                  : (bet.odds ?? "—")}
                               </Text>
                             </View>
                           </View>
@@ -1092,7 +1092,7 @@ export default function Home({ navigation }) {
             const slots = new Set();
             (leagues || []).forEach((lg, li) => {
               (lg.parlay_bets || []).forEach((_, bi) =>
-                slots.add(`${li}-${bi}`)
+                slots.add(`${li}-${bi}`),
               );
             });
             total = slots.size;
