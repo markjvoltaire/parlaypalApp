@@ -33,11 +33,13 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: true,
         tabBarActiveTintColor: "#54FF00",
         tabBarInactiveTintColor: "rgba(255,255,255,0.5)",
         tabBarStyle: {
           backgroundColor: "#101113",
           borderTopColor: "rgba(84, 255, 0, 0.2)",
+          borderTopWidth: 1,
         },
         tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
       }}
@@ -153,12 +155,10 @@ export default function Auth() {
           console.warn(
             "Operation already in progress. Skipping duplicate call."
           );
-          // Set a default screen if we're stuck
-          setInitialScreen("Welcome");
+          setInitialScreen("MainTabs");
         } else {
           console.error("Error fetching customer info:", error);
-          // Set a default screen on error
-          setInitialScreen("Welcome");
+          setInitialScreen("MainTabs");
         }
       } finally {
         if (isMounted) {
@@ -187,7 +187,7 @@ export default function Auth() {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={initialScreen}
+      initialRouteName={initialScreen ?? "MainTabs"}
     >
       <Stack.Screen
         name="MainTabs"

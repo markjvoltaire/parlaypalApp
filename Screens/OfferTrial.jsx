@@ -333,7 +333,7 @@ export default function Trial({ navigation, route }) {
         if (error) {
           console.error("Error inserting into trials table:", error);
         }
-        navigation.navigate("AccessGranted");
+        navigation.navigate("MainTabs");
       }
     } catch (err) {
       console.error("Error in onPurchasePress:", err);
@@ -344,7 +344,7 @@ export default function Trial({ navigation, route }) {
     const info = await restorePurchases();
     // if active subscriptions exist, navigate
     if (info?.activeSubscriptions && info.activeSubscriptions.length > 0) {
-      navigation.navigate("AccessGranted");
+      navigation.navigate("MainTabs");
     } else {
       Alert.alert("Restore", "No active subscriptions found.");
     }
