@@ -11,11 +11,9 @@ import Privacy from "../Screens/Privacy";
 import Terms from "../Screens/Terms";
 import Purchases from "react-native-purchases";
 import Welcome from "../Screens/Welcome";
-import Features from "../Screens/Features";
 import AccessGranted from "../Screens/AccessGranted";
 import Ask from "../Screens/Ask";
 import How from "../Screens/How";
-import Offer from "../Screens/Offer";
 import { supabase } from "../Services/supabase";
 import ExitSurvey from "../Screens/ExitSurvey";
 import Email from "../Screens/Email";
@@ -271,24 +269,23 @@ export default function Auth() {
 
       <Stack.Screen
         name="Offer"
-        component={Offer}
+        component={OfferTrial}
         options={({ route }) => ({
           tabBarVisible: false,
-          title: "Chat",
           headerBackTitle: "Back",
           headerTintColor: "black",
-          headerTransparent: true,
+          headerShown: false,
         })}
       />
 
       <Stack.Screen
         name="Showcase"
-        component={Features}
+        component={OfferTrial}
         options={({ route }) => ({
           tabBarVisible: false,
-          title: "Chat",
           headerBackTitle: "Back",
           headerTintColor: "black",
+          headerShown: false,
         })}
       />
 
