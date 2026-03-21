@@ -377,7 +377,7 @@ const InlineOdds = ({ matchup, data }) => {
           <Ionicons name="pricetags-outline" size={18} color="#54FF00" />
         </View>
         <View style={styles.insightContent}>
-          <Text style={styles.insightLabel}>Market Odds</Text>
+          <Text style={styles.insightLabel}>Odds</Text>
           <Text style={styles.insightText}>
             Books compared: {data.books_considered?.length || 0}
           </Text>

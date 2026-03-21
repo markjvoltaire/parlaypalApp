@@ -24,6 +24,8 @@ import OfferTrial from "../Screens/OfferTrial";
 import Why from "../Screens/Why";
 import Discord from "../Screens/Discord";
 import { ExploreDataProvider } from "../contexts/ExploreDataContext";
+import { AuthProvider } from "../src/contexts/AuthContext";
+import EventDetail from "../Screens/EventDetail";
 
 const Tab = createBottomTabNavigator();
 
@@ -45,22 +47,22 @@ function MainTabs() {
       }}
     >
       <Tab.Screen
-        name="Home"
-        component={Home}
+        name="Discover"
+        component={Explore}
         options={{
-          tabBarLabel: "Home",
+          tabBarLabel: "Discover",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name="compass" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="Explore"
-        component={Explore}
+        name="Analyze"
+        component={Home}
         options={{
-          tabBarLabel: "Explore",
+          tabBarLabel: "Analyze",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass" size={size} color={color} />
+            <Ionicons name="analytics-outline" size={size} color={color} />
           ),
         }}
       />
@@ -185,6 +187,7 @@ export default function Auth() {
   }
 
   return (
+    <AuthProvider>
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
       initialRouteName={initialScreen ?? "MainTabs"}
@@ -192,7 +195,19 @@ export default function Auth() {
       <Stack.Screen
         name="MainTabs"
         component={MainTabs}
-        options={{ gestureEnabled: false }}
+        options={{
+          gestureEnabled: false,
+          headerBackTitle: "Back",
+        }}
+      />
+
+      <Stack.Screen
+        name="EventDetail"
+        component={EventDetail}
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+        }}
       />
 
       <Stack.Screen
@@ -365,6 +380,7 @@ export default function Auth() {
         })}
       />
     </Stack.Navigator>
+    </AuthProvider>
   );
 }
 

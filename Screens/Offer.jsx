@@ -11,7 +11,6 @@ import {
   StatusBar,
   ScrollView,
   SafeAreaView,
-  Switch,
   Linking,
 } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
@@ -19,6 +18,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Purchases from "react-native-purchases";
 import { supabase } from "../Services/supabase";
+import {
+  fetchAndLogPurchasesProducts,
+  resolveDefaultSubscriptionPackages,
+} from "../Services/fetchAndLogPurchasesProducts";
 
 const { width, height } = Dimensions.get("window");
 
@@ -38,23 +41,9 @@ const usePurchase = () => {
 
   const fetchProducts = async () => {
     try {
-      const offerings = await Purchases.getOfferings();
-      // safe-access helper
-      const all = offerings?.all || {};
-      const weeklyOffering = all["Weekly"] || null;
-      const monthlyOffering = all["Monthly"] || null;
-
-      const weeklyPkg =
-        weeklyOffering?.availablePackages &&
-        weeklyOffering.availablePackages.length > 0
-          ? weeklyOffering.availablePackages[0]
-          : null;
-
-      const monthlyPkg =
-        monthlyOffering?.availablePackages &&
-        monthlyOffering.availablePackages.length > 0
-          ? monthlyOffering.availablePackages[0]
-          : null;
+      const offerings = await fetchAndLogPurchasesProducts();
+      const { weeklyPkg, monthlyPkg } =
+        resolveDefaultSubscriptionPackages(offerings);
 
       setPackages({
         weekly: weeklyPkg,
@@ -241,41 +230,6 @@ export default function Trial({ navigation, route }) {
   const email = route?.params?.email || "";
 
   const [selectedPlanKey, setSelectedPlanKey] = useState("per week"); // 'weekly' | 'monthly'
-  const [freeTrialEnabled, setFreeTrialEnabled] = useState(true);
-  const [hasUsedTrial, setHasUsedTrial] = useState(false);
-
-  // Auto-disable trial when monthly is selected
-  useEffect(() => {
-    if (selectedPlanKey === "per month") {
-      setFreeTrialEnabled(false);
-    } else if (selectedPlanKey === "per week" && !hasUsedTrial) {
-      setFreeTrialEnabled(true);
-    }
-  }, [selectedPlanKey, hasUsedTrial]);
-
-  // Check if user has already used their trial
-  useEffect(() => {
-    checkTrialStatus();
-  }, [email]);
-
-  const checkTrialStatus = async () => {
-    if (!email) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("trials")
-        .select("*")
-        .eq("email", email)
-        .single();
-
-      if (data) {
-        setHasUsedTrial(true);
-        setFreeTrialEnabled(false);
-      }
-    } catch (error) {
-      console.error("Error checking trial status:", error);
-    }
-  };
 
   // entrance animation (kept)
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -353,20 +307,22 @@ export default function Trial({ navigation, route }) {
   // small helper to render a plan card
   const PlanCard = ({ pkg, title, planKey }) => {
     const localizedPrice = getLocalizedPrice(pkg);
+    const headlinePrice =
+      planKey === "per month" ? "$9.99" : localizedPrice || title;
 
-    // Custom subtitle logic based on plan key
-    let subtitle;
-    if (planKey === "per month") {
-      subtitle = "Per month • 3-day trial included";
-    } else if (planKey === "per week") {
-      subtitle = "Per week • 3-day trial included";
-    } else {
-      subtitle = pkg?.packageType
-        ? pkg.packageType.toLowerCase() === "annual"
-          ? "Billed Annually"
-          : pkg.packageType.toLowerCase()
-        : getSubtitleForPackage(pkg);
-    }
+    const planSubtitleText = !pkg
+      ? "Not available"
+      : planKey === "per week"
+        ? "No free trial"
+        : planKey === "per month"
+          ? pkg?.product?.pricePerWeekString
+            ? `${pkg.product.pricePerWeekString} avg per week`
+            : "Includes 3-day free trial"
+          : pkg?.packageType
+            ? pkg.packageType.toLowerCase() === "annual"
+              ? "Billed Annually"
+              : pkg.packageType.toLowerCase()
+            : getSubtitleForPackage(pkg);
 
     const selected = selectedPlanKey === planKey;
 
@@ -382,20 +338,14 @@ export default function Trial({ navigation, route }) {
         <View style={styles.planInner}>
           <View>
             <Text style={styles.planPrice}>
-              {localizedPrice || title}{" "}
+              {headlinePrice}{" "}
               {planKey === "per month"
-                ? "per month"
+                ? "Monthly with trial"
                 : planKey === "per week"
-                ? "per week"
+                ? "PerWeekNoTrial"
                 : ""}
             </Text>
-            <Text style={styles.planSubtitle}>
-              {pkg
-                ? planKey === "per week"
-                  ? "3-day trial included"
-                  : "billed monthly"
-                : "Not available"}
-            </Text>
+            <Text style={styles.planSubtitle}>{planSubtitleText}</Text>
           </View>
 
           {selected && (
@@ -405,10 +355,10 @@ export default function Trial({ navigation, route }) {
           )}
         </View>
 
-        {/* Savings Banner for Monthly Plan */}
+        {/* Banner for Monthly with trial plan */}
         {planKey === "per month" && (
           <View style={styles.savingsBanner}>
-            <Text style={styles.savingsText}>50% SAVINGS</Text>
+            <Text style={styles.savingsText}>Free trial</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -450,8 +400,8 @@ export default function Trial({ navigation, route }) {
         <View style={styles.plansSection}>
           {/* Annual / Monthly - use your offerings */}
           <PlanCard
-            pkg={packages.monthly} // monthly offering could be annual or monthly depending on your backend
-            title={"$29.99 per year"}
+            pkg={packages.monthly}
+            title={"$9.99"}
             planKey={"per month"}
           />
 
@@ -460,20 +410,6 @@ export default function Trial({ navigation, route }) {
             title={"$2.99 per week"}
             planKey={"per week"}
           />
-
-          {/* Trial toggle - only show if user hasn't used trial */}
-          {!hasUsedTrial && (
-            <View style={styles.trialRow}>
-              <Text style={styles.trialLabel}>Free Trial Enabled</Text>
-              <Switch
-                value={freeTrialEnabled}
-                onValueChange={setFreeTrialEnabled}
-                disabled={selectedPlanKey === "per month"}
-                thumbColor={freeTrialEnabled ? "#ffffff" : "#ffffff"}
-                trackColor={{ false: "#d0d0d0", true: "#2bb24a" }}
-              />
-            </View>
-          )}
 
           {/* Purchase CTA */}
           <TouchableOpacity
@@ -701,24 +637,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  trialRow: {
-    marginTop: 8,
-    marginBottom: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-  },
-  trialLabel: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-
   ctaButton: {
     borderRadius: 12,
     overflow: "hidden",
-    marginTop: 8,
+    marginTop: 18,
   },
   ctaGradient: {
     paddingVertical: 16,
