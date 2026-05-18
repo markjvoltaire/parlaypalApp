@@ -17,6 +17,9 @@
       "bundleIdentifier": "com.markjvoltaire.parlayPal",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
         "NSPhotoLibraryUsageDescription": "Parlay Pal needs access to your photo library to allow you to upload images, enabling analysis enhance your bet slip.",
         "PrivacyPolicyUrl": "https://parlaypalterms.onrender.com"
       }
@@ -26,7 +29,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.markjvoltaire.parlayPal"
+      "package": "com.markjvoltaire.parlayPal",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import Home from "../Screens/Home";
-import Explore from "../Screens/Explore";
 import Profile from "../Screens/Profile";
 import Help from "../Screens/Help";
 import Privacy from "../Screens/Privacy";
@@ -21,15 +20,10 @@ import NotificationsScreen from "../Screens/NotificationScreen";
 import OfferTrial from "../Screens/OfferTrial";
 import Why from "../Screens/Why";
 import Discord from "../Screens/Discord";
-import { ExploreDataProvider } from "../contexts/ExploreDataContext";
-import { AuthProvider } from "../src/contexts/AuthContext";
-import EventDetail from "../Screens/EventDetail";
-
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   return (
-    <ExploreDataProvider>
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
@@ -44,16 +38,6 @@ function MainTabs() {
         tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
       }}
     >
-      <Tab.Screen
-        name="Discover"
-        component={Explore}
-        options={{
-          tabBarLabel: "Discover",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass" size={size} color={color} />
-          ),
-        }}
-      />
       <Tab.Screen
         name="Analyze"
         component={Home}
@@ -75,7 +59,6 @@ function MainTabs() {
         }}
       />
     </Tab.Navigator>
-    </ExploreDataProvider>
   );
 }
 
@@ -185,7 +168,6 @@ export default function Auth() {
   }
 
   return (
-    <AuthProvider>
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
       initialRouteName={initialScreen ?? "MainTabs"}
@@ -196,15 +178,6 @@ export default function Auth() {
         options={{
           gestureEnabled: false,
           headerBackTitle: "Back",
-        }}
-      />
-
-      <Stack.Screen
-        name="EventDetail"
-        component={EventDetail}
-        options={{
-          headerShown: false,
-          gestureEnabled: true,
         }}
       />
 
@@ -377,7 +350,6 @@ export default function Auth() {
         })}
       />
     </Stack.Navigator>
-    </AuthProvider>
   );
 }
 

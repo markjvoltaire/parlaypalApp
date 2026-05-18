@@ -21,8 +21,14 @@ import Purchases from "react-native-purchases";
 import { LinearGradient } from "expo-linear-gradient";
 // import EventSource from "react-native-event-source";
 
+import { startSlipAnalysis } from "../src/services/analyzeSlip";
+import {
+  calculateImpliedProbability,
+  normalizePct,
+  resolveParlayProbability,
+} from "../src/utils/probability";
+
 const { width, height } = Dimensions.get("window");
-const API_URL = "https://parlaypal.onrender.com";
 // Replace 'your_public_sdk_key' with your RevenueCat public API key.
 Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 
@@ -338,35 +344,6 @@ const getMatchupKey = (bet) => {
   return "";
 };
 
-/* ---------------- Probability helpers ---------------- */
-const calculateImpliedProbability = (odds) => {
-  const n = Number(odds);
-  if (!Number.isFinite(n)) return null;
-  const p = n > 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
-  return p * 100;
-};
-
-const normalizePct = (v) => {
-  if (v == null) return null;
-  const num = Number(v);
-  if (!Number.isFinite(num)) return null;
-  return num <= 1 ? num * 100 : num;
-};
-
-const calculateParlayProbability = (bets) => {
-  if (!Array.isArray(bets) || bets.length === 0) return null;
-  const product = bets.reduce((acc, bet) => {
-    if (Number.isFinite(bet?.odds)) {
-      const pct = calculateImpliedProbability(bet.odds);
-      return acc * (pct / 100);
-    }
-    const pct = normalizePct(bet?.probability);
-    if (pct == null) return acc;
-    return acc * (pct / 100);
-  }, 1);
-  return product * 100;
-};
-
 /* ---------------- Inline Odds Component ---------------- */
 const InlineOdds = ({ matchup, data }) => {
   if (!matchup || !data) return null;
@@ -536,29 +513,6 @@ export default function Home({ navigation }) {
 
   /* ---------------- Upload image, then open SSE and stream results ---------------- */
 
-  function createSSEParser(onEvent) {
-    let buffer = "";
-    let eventType = "message";
-    const flush = () => {
-      const parts = buffer.split("\n\n");
-      buffer = parts.pop();
-      for (const frame of parts) {
-        const lines = frame.split("\n");
-        eventType = "message";
-        let data = "";
-        for (const line of lines) {
-          if (line.startsWith("event:")) eventType = line.slice(6).trim();
-          else if (line.startsWith("data:")) data += line.slice(5).trim();
-        }
-        onEvent(eventType, data);
-      }
-    };
-    return (chunk) => {
-      buffer += chunk;
-      flush();
-    };
-  }
-
   const uploadImage = async () => {
     const customerInfo = await Purchases.getCustomerInfo();
     const userId = customerInfo.originalAppUserId;
@@ -581,34 +535,18 @@ export default function Home({ navigation }) {
     setCompletedIds(new Set());
 
     try {
-      const formData = new FormData();
+      let streamCtrl = null;
 
-      const uri = image;
-      let name = "slip.jpg";
-      let type = "image/jpeg";
-      const extMatch = uri
-        .toLowerCase()
-        .match(/\.(heic|heif|png|jpg|jpeg|webp)$/);
-      if (extMatch) {
-        const ext = extMatch[1];
-        name = `slip.${ext}`;
-        if (ext === "png") type = "image/png";
-        else if (ext === "webp") type = "image/webp";
-        else type = "image/jpeg";
-      }
-
-      formData.append("image", { uri, name, type });
-      formData.append("userId", userId);
-
-      const url = `${API_URL}/analyzePartial`;
-      const xhr = new XMLHttpRequest();
-      let closed = false;
-
-      const handleEvent = (type, dataStr) => {
+      const handleEvent = (type, payload) => {
         try {
-          const payload = dataStr ? JSON.parse(dataStr) : {};
-
           if (type === "status") {
+            return;
+          }
+
+          if (type === "connection_error") {
+            streamCtrl?.markClosed();
+            setUploading(false);
+            Alert.alert("Connection Error", "Please try again.");
             return;
           }
 
@@ -651,9 +589,9 @@ export default function Home({ navigation }) {
               lg.league = league || lg.league || "MLB";
               const bets = lg.parlay_bets ? [...lg.parlay_bets] : [];
 
-              const calculatedIndividualProbability = Number.isFinite(bet?.odds)
-                ? calculateImpliedProbability(bet.odds)
-                : normalizePct(bet?.probability);
+              const calculatedIndividualProbability =
+                calculateImpliedProbability(bet?.odds) ??
+                normalizePct(bet?.probability);
 
               const updatedBet = {
                 ...bet,
@@ -716,9 +654,9 @@ export default function Home({ navigation }) {
                   ...lg,
                   parlay_bets: (lg.parlay_bets || []).map((b) => {
                     const teams = normalizeTeams(b.teams);
-                    let prob = Number.isFinite(b?.odds)
-                      ? calculateImpliedProbability(b.odds)
-                      : normalizePct(b?.probability);
+                    const prob =
+                      calculateImpliedProbability(b?.odds) ??
+                      normalizePct(b?.probability);
                     return { ...b, teams, probability: prob };
                   }),
                 })),
@@ -744,62 +682,37 @@ export default function Home({ navigation }) {
               const allBets = normalizedFinal.leagues.flatMap(
                 (league) => league.parlay_bets || [],
               );
-              const calculatedParlayProbability =
-                calculateParlayProbability(allBets);
 
               setAnalysisResponse({
                 ...normalizedFinal,
-                parlay_probability:
-                  calculatedParlayProbability != null
-                    ? calculatedParlayProbability
-                    : null,
+                parlay_probability: resolveParlayProbability(allBets, {
+                  parlayOdds: payload.slipInfo?.parlay_odds,
+                  parlayProbability: payload.slipInfo?.parlay_probability,
+                }),
               });
             }
-            if (!closed) {
-              closed = true;
-              try {
-                xhr.abort();
-              } catch {}
-            }
+            streamCtrl?.markClosed();
+            streamCtrl?.abort();
             return;
           }
 
           if (type === "error") {
-            if (!closed) {
-              closed = true;
-              try {
-                xhr.abort();
-              } catch {}
-            }
+            streamCtrl?.markClosed();
+            streamCtrl?.abort();
             setUploading(false);
             Alert.alert("Analysis failed", payload?.message || "Unknown error");
             return;
           }
         } catch (e) {
-          console.log("SSE parse error:", e);
+          console.warn("[Parlay] handleEvent error:", e);
         }
       };
 
-      const onChunk = createSSEParser(handleEvent);
-      xhr.onreadystatechange = () => {};
-      let lastIndex = 0;
-      xhr.onprogress = () => {
-        const text = xhr.responseText || "";
-        const next = text.slice(lastIndex);
-        lastIndex = text.length;
-        if (next) onChunk(next);
-      };
-      xhr.onerror = () => {
-        if (!closed) {
-          closed = true;
-          setUploading(false);
-          Alert.alert("Connection Error", "Please try again.");
-        }
-      };
-
-      xhr.open("POST", url, true);
-      xhr.setRequestHeader("Accept", "text/event-stream");
-      xhr.send(formData);
+      streamCtrl = startSlipAnalysis({
+        imageUri: image,
+        userId,
+        onEvent: handleEvent,
+      });
     } catch (error) {
       console.error("Upload error:", error);
       setAnalysisResponse(null);
