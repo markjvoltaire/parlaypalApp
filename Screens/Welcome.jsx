@@ -19,8 +19,6 @@ import LottieView from "lottie-react-native";
 
 const { width, height } = Dimensions.get("window");
 
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
-
 export default function Welcome({ navigation }) {
   const [showSplash, setShowSplash] = useState(true);
   const [processingRestore, setProcessingRestore] = useState(false);

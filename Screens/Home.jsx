@@ -29,8 +29,6 @@ import {
 } from "../src/utils/probability";
 
 const { width, height } = Dimensions.get("window");
-// Replace 'your_public_sdk_key' with your RevenueCat public API key.
-Purchases.configure({ apiKey: "appl_uPPCiaHpkTLNkrlhOikrUMWLaBH" });
 
 /* ---------------- Floating decorative dots ---------------- */
 const FloatingElements = () => {
