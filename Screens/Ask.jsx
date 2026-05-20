@@ -24,7 +24,9 @@ const ChevronRight = () => (
       alignItems: "center",
     }}
   >
-    <Text style={{ color: "#fff", fontWeight: "bold" }}>→</Text>
+    <Text style={{ color: "#54FF00", fontWeight: "bold", fontSize: 16 }}>
+      →
+    </Text>
   </View>
 );
 
@@ -35,17 +37,17 @@ const ProgressDot = ({ active, completed }) => (
       height: 8,
       borderRadius: 4,
       backgroundColor: active
-        ? "#4F78FF"
+        ? "#54FF00"
         : completed
-        ? "#4F78FF"
-        : "rgba(255,255,255,0.2)",
+        ? "#54FF00"
+        : "rgba(84, 255, 0, 0.2)",
       marginHorizontal: 4,
       transition: "all 0.3s ease",
     }}
   />
 );
 
-export default function Ask({ navigation }) {
+export default function Ask({ navigation, route }) {
   const [step, setStep] = useState(0);
   const [responses, setResponses] = useState([]);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -53,6 +55,10 @@ export default function Ask({ navigation }) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const screenWidth = Dimensions.get("window").width;
   const [surveyAnswers, setSurveyAnswers] = useState({});
+
+  // Retrieve email and expoToken from navigation params
+  const email = route?.params?.email || null;
+  const expoToken = route?.params?.expoToken || null;
 
   const questions = [
     "What type of bets do you usually place?",
@@ -126,20 +132,26 @@ export default function Ask({ navigation }) {
               researchTime: updatedAnswers.question2,
               foundBy: updatedAnswers.question3,
               userId: userId,
+              email: email,
+              expoToken: expoToken,
             },
           ]);
           if (error) {
             console.error("Error saving responses:", error.message);
           } else {
             console.log("Responses saved:", data);
-            navigation.navigate("How");
+            navigation.navigate("How", {
+              surveyAnswers: updatedAnswers,
+              email,
+              userId,
+            });
           }
         } catch (e) {
           console.error("Unexpected error:", e);
         }
       }
 
-      // 5) reset the “pressed” highlight
+      // 5) reset the "pressed" highlight
       setSelectedAnswer(null);
 
       // 6) if there are more questions, animate to the next one
@@ -173,7 +185,7 @@ export default function Ask({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={["#101426", "#1A2240"]} style={styles.container}>
+      <LinearGradient colors={["#101113", "#1A181B"]} style={styles.container}>
         <View style={styles.header}>
           <View style={styles.progressContainer}>
             {questions.map((_, i) => (
@@ -237,7 +249,7 @@ export default function Ask({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#101426",
+    backgroundColor: "#101113",
   },
   headerRow: {
     flexDirection: "row",
@@ -298,7 +310,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   answerButton: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(26, 24, 27, 0.8)",
     paddingVertical: 18,
     paddingHorizontal: 22,
     borderRadius: 16,
@@ -307,16 +319,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(84, 255, 0, 0.2)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 3,
   },
   selectedAnswer: {
-    backgroundColor: "#4F78FF",
-    borderColor: "#6D8AFF",
+    backgroundColor: "rgba(84, 255, 0, 0.2)",
+    borderColor: "#54FF00",
+    shadowColor: "#54FF00",
+    shadowOpacity: 0.3,
   },
   answerText: {
     fontSize: 18,
@@ -324,7 +338,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   selectedAnswerText: {
-    color: "#ffffff",
+    color: "#54FF00",
     fontWeight: "700",
   },
   chevronContainer: {

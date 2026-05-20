@@ -2,21 +2,24 @@
   "expo": {
     "name": "Parlay Pal",
     "slug": "parlayPal",
-    "version": "2.0.8",
+    "version": "2.4.8",
     "orientation": "portrait",
     "icon": "./assets/parlaypalIcon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/parlaypalSplash.png",
+      "image": "./assets/blackSplash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1C2135"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.markjvoltaire.parlayPal",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
         "NSPhotoLibraryUsageDescription": "Parlay Pal needs access to your photo library to allow you to upload images, enabling analysis enhance your bet slip.",
         "PrivacyPolicyUrl": "https://parlaypalterms.onrender.com"
       }
@@ -25,7 +28,9 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.markjvoltaire.parlayPal",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

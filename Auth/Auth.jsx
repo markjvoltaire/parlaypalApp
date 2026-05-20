@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 import Home from "../Screens/Home";
 import Profile from "../Screens/Profile";
 import Help from "../Screens/Help";
@@ -8,112 +10,156 @@ import Privacy from "../Screens/Privacy";
 import Terms from "../Screens/Terms";
 import Purchases from "react-native-purchases";
 import Welcome from "../Screens/Welcome";
-import Features from "../Screens/Features";
 import AccessGranted from "../Screens/AccessGranted";
 import Ask from "../Screens/Ask";
 import How from "../Screens/How";
-import Offer from "../Screens/Offer";
 import { supabase } from "../Services/supabase";
 import ExitSurvey from "../Screens/ExitSurvey";
+import Email from "../Screens/Email";
+import NotificationsScreen from "../Screens/NotificationScreen";
+import OfferTrial from "../Screens/OfferTrial";
+import Why from "../Screens/Why";
+import Discord from "../Screens/Discord";
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: "#54FF00",
+        tabBarInactiveTintColor: "rgba(255,255,255,0.5)",
+        tabBarStyle: {
+          backgroundColor: "#101113",
+          borderTopColor: "rgba(84, 255, 0, 0.2)",
+          borderTopWidth: 1,
+        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
+      }}
+    >
+      <Tab.Screen
+        name="Analyze"
+        component={Home}
+        options={{
+          tabBarLabel: "Analyze",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="analytics-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={Profile}
+        options={{
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 export default function Auth() {
   const Stack = createNativeStackNavigator();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const isFetchingRef = useRef(false); // flag to prevent concurrent requests
+  const [isLoading, setIsLoading] = useState(true);
+  const isFetchingRef = useRef(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
   const [initialScreen, setInitialScreen] = useState(null);
 
   const hasCompletedOnboarding = async (userId) => {
-    const { data, error } = await supabase
-      .from("survey") // or "surveys" if your actual table name differs
-      .select("id")
-      .eq("userId", userId)
-      .limit(1);
+    try {
+      const { data, error } = await supabase
+        .from("survey")
+        .select("id")
+        .eq("userId", userId)
+        .limit(1);
 
-    if (error) {
-      console.error("Error checking onboarding status:", error);
-      return false; // fallback: treat as not completed
+      if (error) {
+        console.error("Error checking onboarding status:", error);
+        return false;
+      }
+
+      return data.length > 0;
+    } catch (error) {
+      console.error("Error in hasCompletedOnboarding:", error);
+      return false;
     }
-
-    return data.length > 0;
   };
 
-  // Fetch products and subscription status from RevenueCat when component mounts
   useEffect(() => {
+    let isMounted = true;
+
     const checkSubscriptionStatus = async () => {
       if (isFetchingRef.current) {
-        // Already fetching, so skip this call
         return;
       }
+
       isFetchingRef.current = true;
+      setIsLoading(true);
+
       try {
-        setIsLoading(true); // start loading
         const customerInfo = await Purchases.getCustomerInfo();
-        console.log("Customer Info!:", customerInfo);
+        if (!isMounted) return;
+
         const userId = customerInfo.originalAppUserId;
-        console.log("userId :>> ", userId);
-
         const completedOnboarding = await hasCompletedOnboarding(userId);
+        if (!isMounted) return;
+
         setHasOnboarded(completedOnboarding);
-        console.log("completedOnboarding :>> ", completedOnboarding);
 
-        // Check for subscription
-        const isSubscribedUser =
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0;
-
+        const isSubscribedUser = customerInfo.activeSubscriptions?.length > 0;
         setIsSubscribed(isSubscribedUser);
 
-        // Determine initial screen
+        // Set initial screen based on subscription and onboarding status
         if (isSubscribedUser) {
-          setInitialScreen("Home");
+          setInitialScreen("MainTabs");
         } else if (!completedOnboarding) {
           setInitialScreen("Welcome");
         } else {
-          setInitialScreen("Home");
-        }
-
-        // Check for active subscriptions
-        if (
-          customerInfo.activeSubscriptions &&
-          customerInfo.activeSubscriptions.length > 0
-        ) {
-          console.log("User is currently subscribed.");
-          setIsSubscribed(true);
-        } else {
-          console.log("User is not subscribed.");
-          setIsSubscribed(false);
+          setInitialScreen("MainTabs");
         }
 
         // Fetch available products
         const offerings = await Purchases.getOfferings();
-        if (
-          offerings.current !== null &&
-          offerings.current.availablePackages.length > 0
-        ) {
+        if (!isMounted) return;
+
+        if (offerings.current?.availablePackages?.length > 0) {
           setProducts(offerings.current.availablePackages);
         }
       } catch (error) {
-        if (error.message && error.message.includes("already in progress")) {
+        if (!isMounted) return;
+
+        if (error.message?.includes("already in progress")) {
           console.warn(
             "Operation already in progress. Skipping duplicate call."
           );
+          setInitialScreen("MainTabs");
         } else {
           console.error("Error fetching customer info:", error);
+          setInitialScreen("MainTabs");
         }
       } finally {
-        isFetchingRef.current = false;
-        setIsLoading(false); // end loading regardless of result
+        if (isMounted) {
+          isFetchingRef.current = false;
+          setIsLoading(false);
+        }
       }
     };
 
     checkSubscriptionStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Show a loading indicator while subscription status is being checked
-  if (isLoading || initialScreen === null) {
+  // Show loading indicator only when we're actually loading and don't have an initial screen
+  if (isLoading && initialScreen === null) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="white" />
@@ -124,19 +170,15 @@ export default function Auth() {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={initialScreen}
+      initialRouteName={initialScreen ?? "MainTabs"}
     >
       <Stack.Screen
-        name="Home"
-        component={Home}
-        options={({ route }) => ({
-          tabBarVisible: false,
-          title: "Chat",
-          headerBackTitle: "Back",
-          headerTintColor: "black",
-          headerTransparent: true,
+        name="MainTabs"
+        component={MainTabs}
+        options={{
           gestureEnabled: false,
-        })}
+          headerBackTitle: "Back",
+        }}
       />
 
       <Stack.Screen
@@ -187,8 +229,8 @@ export default function Auth() {
       />
 
       <Stack.Screen
-        name="Offer"
-        component={Offer}
+        name="ExitSurvey"
+        component={ExitSurvey}
         options={({ route }) => ({
           tabBarVisible: false,
           title: "Chat",
@@ -199,22 +241,21 @@ export default function Auth() {
       />
 
       <Stack.Screen
-        name="Showcase"
-        component={Features}
+        name="Offer"
+        component={OfferTrial}
         options={({ route }) => ({
           tabBarVisible: false,
-          title: "Chat",
           headerBackTitle: "Back",
           headerTintColor: "black",
+          headerShown: false,
         })}
       />
 
       <Stack.Screen
-        name="Profile"
-        component={Profile}
+        name="Showcase"
+        component={OfferTrial}
         options={({ route }) => ({
           tabBarVisible: false,
-          title: "Profile",
           headerBackTitle: "Back",
           headerTintColor: "black",
           headerShown: false,
@@ -233,8 +274,52 @@ export default function Auth() {
       />
 
       <Stack.Screen
-        name="ExitSurvey"
-        component={ExitSurvey}
+        name="Email"
+        component={Email}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="OfferTrial"
+        component={OfferTrial}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Why"
+        component={Why}
+        options={({ route }) => ({
+          tabBarVisible: false,
+          headerBackTitle: "Back",
+          headerTintColor: "black",
+          headerShown: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Discord"
+        component={Discord}
         options={({ route }) => ({
           tabBarVisible: false,
           headerBackTitle: "Back",
@@ -273,6 +358,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#101426",
+    backgroundColor: "black",
   },
 });

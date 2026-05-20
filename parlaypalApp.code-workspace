@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": ".",
+    },
+    {
+      "path": "../ScoretradeBackend",
+    },
+    {
+      "path": "../SportsTraderApp",
+    },
+  ],
+  "settings": {},
+}
